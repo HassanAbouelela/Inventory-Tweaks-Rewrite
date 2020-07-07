@@ -25,8 +25,10 @@ assignees: ''
 
 **Version Info:**
 <!-- Fill this to the best of your ability  -->
- - OS: [e.g. Windows]
- - Version [e.g. 1.15.1]
+ - OS:
+<!-- [e.g. Windows] -->
+ - Version:
+<!-- [e.g. 1.15.1] -->
 
 **Additional context**
 <!-- Add any other context about the problem here. -->
