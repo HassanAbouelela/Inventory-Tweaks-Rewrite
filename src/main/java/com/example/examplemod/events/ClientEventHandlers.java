@@ -37,6 +37,7 @@ import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.screen.inventory.CreativeScreen;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.CraftResultInventory;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.inventory.container.Slot;
@@ -247,34 +248,33 @@ public class ClientEventHandlers {
         } catch (Exception ignored) {}
 
         if (slot != null && event.getButton() != 2) {
-            if ((lastMod > 0 || lastKey != -1) && System.currentTimeMillis() < lastKeyPress + 500) {
+            if ((lastMod > 0 || lastKey != -1) && System.currentTimeMillis() < lastKeyPress + 600) {
                 Map config = CONFIG.getMap("Shortcuts");
-                if (config != null && (config.containsKey("Shortcuts") && !(boolean) config.get("Shortcuts"))) {
+                if (config == null) return;
+                if (config.containsKey("Shortcuts") && !(boolean) config.get("Shortcuts")) {
                     return;
                 }
 
-                if (slot.inventory instanceof CraftingInventory) {
+                if (event.getButton() == 0 && lastMod != 1 && slot.inventory instanceof CraftResultInventory) {
                     // Left click in a crafting inventory
                     ClientPlayerEntity player = Minecraft.getInstance().player;
                     if (player != null) {
-                        boolean canCraft;
                         List<Slot> slots;
-                        ItemStack craftResult;
+                        ItemStack craftStack;
 
                         if (player.openContainer instanceof PlayerContainer) {
                             // Player crafting inventory
-                            canCraft = !player.openContainer.inventorySlots.get(0).getStack().getItem().toString().equals("air");
-                            craftResult = player.openContainer.inventorySlots.get(0).getStack().copy();
-
+                            craftStack = player.openContainer.inventorySlots.get(0).getStack();
                             slots = player.openContainer.inventorySlots.subList(1, 5);
                         } else {
                             // External crafting inventory
                             WorkbenchContainer workbench = (WorkbenchContainer) player.openContainer;
-                            canCraft = !workbench.inventorySlots.get(0).getStack().getItem().toString().equals("air");
-                            craftResult = workbench.inventorySlots.get(0).getStack().copy();
-//TODO: Check -1 needed
+                            craftStack = workbench.inventorySlots.get(0).getStack();
                             slots = workbench.inventorySlots.subList(1, workbench.getSize());
                         }
+
+                        boolean canCraft = !Functions.isAir(craftStack);
+                        ItemStack craftResult = craftStack.copy();
 
                         if (canCraft && !slots.isEmpty()) {
                             ArrayList<ItemStack> updatedCraftingInv = new ArrayList<>();
@@ -283,81 +283,50 @@ public class ClientEventHandlers {
                             switch (lastMod) {
                                 case 2:
                                     // Control. Craft one item.
+                                    if (config.containsKey("Craft one item - Ctrl + Click") &&
+                                            !(boolean) config.get("Craft one item - Ctrl + Click")) return;
+
                                     for (Slot craftingSlot: slots) {
                                         ItemStack newItem = craftingSlot.getStack().copy();
                                         newItem.setCount(craftingSlot.getStack().getCount() - 1);
 
                                         updatedCraftingInv.add(newItem);
-                                        crafted++;
+                                    }
+                                    crafted++;
+
+                                    craftResult.setCount(craftResult.getCount() * crafted);
+
+                                    if (crafted > 0 && Functions.craftItem(craftResult, player)) {
+                                        Channel.INSTANCE.sendToServer(new OptimizationPacket(updatedCraftingInv));
                                     }
 
                                     break;
                                 case 3:
                                     // Control + Shift. Craft all items from inventory.
-                            }
-
-                            craftResult.setCount(craftResult.getCount() * crafted);
-                            ArrayList<ItemStack> updatedInventory = new ArrayList<>(player.inventory.mainInventory);
-
-                            if (crafted > 0) {
-                                boolean craftFits = false;
-
-                                for (int i = 0; i < player.inventory.mainInventory.size(); i++) {
-                                    ItemStack item = player.inventory.getStackInSlot(i);
-                                    if (item.getMaxStackSize() != item.getCount()
-                                            && item.getItem() == craftResult.getItem()
-                                            && item.getTag() == craftResult.getTag()) {
-                                        //  Same item, attempt merge
-                                        int delta = item.getMaxStackSize() - item.getCount();
-                                        if (delta >= craftResult.getCount()) {
-                                            // Fit all
-                                            ItemStack newItem = item.copy();
-                                            newItem.setCount(item.getCount() + craftResult.getCount());
-                                            updatedInventory.set(i, newItem);
-
-                                            craftFits = true;
-                                            break;
-
-                                        } else {
-                                            // Fit some
-                                            craftResult.setCount(craftResult.getCount() - delta);
-
-                                            ItemStack newItem = item.copy();
-                                            newItem.setCount(item.getMaxStackSize());
-
-                                            updatedInventory.set(i, newItem);
-                                        }
-
-                                    } else if (item.getItem().toString().equals("air")) {
-                                        // Blank spot
-                                        updatedInventory.set(i, craftResult);
-
-                                        craftFits = true;
-                                        break;
+                                    if (config.containsKey("Craft all from inventory - Ctrl + Shift + Click") &&
+                                            !(boolean) config.get("Craft all from inventory - Ctrl + Shift + Click")) {
+                                        return;
                                     }
-                                }
 
-                                if (craftFits) {
-                                    Channel.INSTANCE.sendToServer(new OptimizationPacket(updatedCraftingInv));
-                                    Channel.INSTANCE.sendToServer(new SortPacket(updatedInventory, 0));
-                                }
+                                    ArrayList<ItemStack> neededItems = new ArrayList<>();
+                                    for (Slot craftingSlot: slots) {
+                                        neededItems.add(craftingSlot.getStack());
+                                    }
+
+                                    Functions.craftAllInventory(neededItems, craftResult, player);
                             }
+
+                            event.setCanceled(true);
                         }
                     }
 
                 } else if (event.getButton() == 0) {
-                    if (event.getButton() != 0) {
-                        lastKey = -1;
-                        lastMod = 0;
-                        return;
-                    }
-
                     // Left Click
                     switch (lastMod) {
                         case 2:
                             // Control. Move one item.
-                            if (config != null && config.containsKey("Move one item - Control + Click") &&
-                                    !(boolean) config.get("Move one item - Control + Click")) return;
+                            if (config.containsKey("Move one item - Control + Click") &&
+                                !(boolean) config.get("Move one item - Control + Click")) return;
 
                             event.setCanceled(true);
                             Functions.moveUnknownInv(slot, 1, Functions.MoveType.MOVE_INT);
@@ -366,8 +335,7 @@ public class ClientEventHandlers {
 
                         case 3:
                             // Control + Shift. Move all items of the same type.
-                            if (config != null &&
-                                    config.containsKey("Move all items of the same type - Control + Shift + Click") &&
+                            if (config.containsKey("Move all items of the same type - Control + Shift + Click") &&
                                     !(boolean) config.get("Move all items of the same type - Control + Shift + Click"))
                                 return;
 
@@ -378,8 +346,10 @@ public class ClientEventHandlers {
 
                         case 4:
                             // Alt. Drop item.
-                            if (config == null || (config.containsKey("Drop - Alt + Click") &&
-                                    (boolean) config.get("Drop - Alt + Click"))) {
+                            if (config.containsKey("Drop - Alt + RightClick") &&
+                                    (boolean) config.get("Drop - Alt + Right Click")) {
+                                // TODO: drop
+                                System.out.println("here");
                                 event.setCanceled(true);
                                 Channel.INSTANCE.sendToServer(
                                         new DropPacket(slot.getSlotIndex(), slot.inventory instanceof PlayerInventory)
@@ -397,8 +367,8 @@ public class ClientEventHandlers {
                             case 83:
                             case 264:
                                 // W or Up, or S or Down. Move full stack.
-                                if (config != null && config.containsKey("Move one stack - Shift/W/Up/S/Down + Click")
-                                        && !(boolean) config.get("Move one stack - Shift/W/Up/S/Down + Click")) return;
+                                if (config.containsKey("Move one stack - Shift/W/Up/S/Down + Click") &&
+                                        !(boolean) config.get("Move one stack - Shift/W/Up/S/Down + Click")) return;
 
                                 event.setCanceled(true);
                                 Functions.moveUnknownInv(slot, 0, Functions.MoveType.MOVE_STACK);
@@ -406,7 +376,7 @@ public class ClientEventHandlers {
 
                             case 32:
                                 // Space. Move full inventory.
-                                if (config != null && config.containsKey("Move everything - Space + Click") &&
+                                if (config.containsKey("Move everything - Space + Click") &&
                                         !(boolean) config.get("Move everything - Space + Click")) return;
 
                                 event.setCanceled(true);
@@ -416,7 +386,7 @@ public class ClientEventHandlers {
                     }
 
                 } else if (event.getButton() == 1 && lastMod > 0
-                        && !slot.getStack().getItem().toString().equals("air")) {
+                        && !Functions.isAir(slot.getStack())) {
                     // Right Click. Move to empty slot.
                     Functions.moveUnknownInv(slot, slot.getStack().getCount(), Functions.MoveType.MOVE_EMPTY);
                     event.setCanceled(true);
@@ -451,7 +421,7 @@ public class ClientEventHandlers {
             for (int i = 0; i < invSize; i++) {
                 ItemStack itemStack = slot.inventory.getStackInSlot(i);
 
-                if (itemStack.getItem().toString().equals("air")) {
+                if (Functions.isAir(itemStack)) {
                     continue;
                 }
 
@@ -570,7 +540,7 @@ public class ClientEventHandlers {
         ClientPlayerEntity playerEntity = Minecraft.getInstance().player;
         Slot slot = ((ContainerScreen) event.getGui()).getSlotUnderMouse();
         if (playerEntity == null || slot == null || playerEntity.openContainer == playerEntity.container
-                || slot.getStack().getItem().toString().equals("air")
+                || Functions.isAir(slot.getStack())
                 || playerEntity.openContainer instanceof CreativeScreen.CreativeContainer) return;
 
         int size = 0;
@@ -693,7 +663,7 @@ public class ClientEventHandlers {
     public void onItemToss(ItemTossEvent event) {
         ClientPlayerEntity player = Minecraft.getInstance().player;
         if (player == null || event.getPlayer().getUniqueID() != player.getUniqueID() || event.getPlayer().isCreative()
-                || !event.getPlayer().getHeldItemMainhand().getItem().toString().equals("air")
+                || !Functions.isAir(event.getPlayer().getHeldItemMainhand())
                 || System.currentTimeMillis() < lastReplace + 100) return;
 
         Functions.replaceItem(event.getPlayer(), Hand.MAIN_HAND, event.getEntityItem().getItem());
