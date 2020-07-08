@@ -311,12 +311,12 @@ public class Config {
 //        unsupported.addSetting("Allow", false);
 
         shortcuts.addSetting("Shortcuts", true);
-        shortcuts.addSetting("Move one item - Control + Click", false);
+        shortcuts.addSetting("Move one item - Control + Click", true);
         shortcuts.addSetting("Move one stack - Shift/W/Up/S/Down + Click", true);
         shortcuts.addSetting("Move all items of the same type - Control + Shift + Click", true);
         shortcuts.addSetting("Move everything - Space + Click", true);
         shortcuts.addSetting("Move to empty slot - Ctrl/Shift/ALT + Right Click", true);
-        shortcuts.addSetting("Drop - Alt + Right Click", false);
+        shortcuts.addSetting("Drop - Alt + Click", false);
         shortcuts.addSetting("Craft one item - Ctrl + Click", true);
         shortcuts.addSetting("Craft one stack - Shift + Click", true);
         shortcuts.addSetting("Craft all from inventory - Ctrl + Shift + Click", true);

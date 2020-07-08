@@ -46,7 +46,7 @@ import java.util.Map;
  * Inventory Tweaks is a minecraft mod meant to improve QoL. IT allows players to interact with inventories quickly,
  * and efficiently.
  *
- * @author Scaleios
+ * @author Hassan Abouelela
  * @version 1.0.0
  *
  */
