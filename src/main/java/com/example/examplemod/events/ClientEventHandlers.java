@@ -31,7 +31,6 @@ import com.example.examplemod.network.Channel;
 import com.example.examplemod.network.DropPacket;
 import com.example.examplemod.network.OptimizationPacket;
 import com.example.examplemod.network.SortPacket;
-import javafx.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
@@ -58,6 +57,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 
 import static com.example.examplemod.ExampleMod.CONFIG;
@@ -112,7 +112,7 @@ public class ClientEventHandlers {
                     LOGGER.error(String.format("[%s] Screen Sort Error Occurred, See Above.", ExampleMod.NAME));
                     break;
 
-                    //TODO: The buttons below need to check which inventory they are sorting
+                //TODO: The buttons below need to check which inventory they are sorting
 
                 case DEFAULT_BUTTON:
                     currentOrder = Order.DEFAULT;
@@ -326,7 +326,7 @@ public class ClientEventHandlers {
                         case 2:
                             // Control. Move one item.
                             if (config.containsKey("Move one item - Control + Click") &&
-                                !(boolean) config.get("Move one item - Control + Click")) return;
+                                    !(boolean) config.get("Move one item - Control + Click")) return;
 
                             event.setCanceled(true);
                             Functions.moveUnknownInv(slot, 1, Functions.MoveType.MOVE_INT);
@@ -415,7 +415,7 @@ public class ClientEventHandlers {
             int invSize = slot.inventory.getSizeInventory();
 
             // Collecting every unique item, and their places
-            Map<CompoundNBT, Pair<Integer, ArrayList<Integer>>> uniqueItems = new HashMap<>();
+            Map<CompoundNBT, Map.Entry<Integer, ArrayList<Integer>>> uniqueItems = new HashMap<>();
             for (int i = 0; i < invSize; i++) {
                 ItemStack itemStack = slot.inventory.getStackInSlot(i);
 
@@ -435,12 +435,12 @@ public class ClientEventHandlers {
                     ArrayList<Integer> indexes = uniqueItems.get(tags).getValue();
                     indexes.add(i);
                     uniqueItems.replace(tags,
-                            new Pair<>(uniqueItems.get(tags).getKey() + itemStack.getCount(), indexes));
+                            new SimpleEntry<>(uniqueItems.get(tags).getKey() + itemStack.getCount(), indexes));
                 } else {
                     ArrayList<Integer> indexes = new ArrayList<>();
                     indexes.add(i);
 
-                    uniqueItems.put(tags, new Pair<>(itemStack.getCount(), indexes));
+                    uniqueItems.put(tags, new SimpleEntry<>(itemStack.getCount(), indexes));
                 }
             }
 
@@ -448,8 +448,6 @@ public class ClientEventHandlers {
 
             // Optimizing
             List<ItemStack> optimizedItems = Arrays.asList(new ItemStack[invSize]);
-
-            System.out.println(uniqueItems);
 
             for (CompoundNBT tag: uniqueItems.keySet()) {
                 int itemsLeft = uniqueItems.get(tag).getKey();
