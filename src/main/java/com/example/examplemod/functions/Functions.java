@@ -387,7 +387,6 @@ public class Functions {
         }
         int craftedItems = maxCraft * craftResult.getCount();
 
-        // TODO: Figure out why one sandstone left
         // Record how many items left
         for (Item item: itemCount.keySet()) {
             int itemsLeft = itemCount.get(item) - (maxCraft * uniqueCraftingItems.get(item));
@@ -461,7 +460,7 @@ public class Functions {
                 craftResult.setCount(craftResult.getMaxStackSize());
                 craftedItems -= craftResult.getMaxStackSize();
             } else {
-                craftResult.setCount(craftResult.getCount() + craftedItems);
+                craftResult.setCount(craftedItems);
                 craftedItems = 0;
             }
             if (airIndexes.size() > 0) {
@@ -1199,7 +1198,7 @@ public class Functions {
                     hotbarSize = (int) CONFIG.getConstant("Player Hotbar Size");
                 }
 
-                // TODO: add skiphotbar option
+                // TODO: add skip hotbar option
                 boolean skipHotbar = true;
                 if (CONFIG.getConstant("a") != null) {
                     skipHotbar = false;

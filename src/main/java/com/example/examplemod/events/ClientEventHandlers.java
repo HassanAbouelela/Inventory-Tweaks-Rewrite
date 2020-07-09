@@ -248,7 +248,7 @@ public class ClientEventHandlers {
         } catch (Exception ignored) {}
 
         if (slot != null && event.getButton() != 2) {
-            if ((lastMod > 0 || lastKey != -1) && System.currentTimeMillis() < lastKeyPress + 600) {
+            if ((lastMod > 0 || lastKey != -1) && System.currentTimeMillis() < lastKeyPress + 500) {
                 Map config = CONFIG.getMap("Shortcuts");
                 if (config == null) return;
                 if (config.containsKey("Shortcuts") && !(boolean) config.get("Shortcuts")) {
@@ -346,10 +346,8 @@ public class ClientEventHandlers {
 
                         case 4:
                             // Alt. Drop item.
-                            if (config.containsKey("Drop - Alt + RightClick") &&
-                                    (boolean) config.get("Drop - Alt + Right Click")) {
-                                // TODO: drop
-                                System.out.println("here");
+                            if (config.containsKey("Drop - Alt + Click") &&
+                                    (boolean) config.get("Drop - Alt + Click")) {
                                 event.setCanceled(true);
                                 Channel.INSTANCE.sendToServer(
                                         new DropPacket(slot.getSlotIndex(), slot.inventory instanceof PlayerInventory)
