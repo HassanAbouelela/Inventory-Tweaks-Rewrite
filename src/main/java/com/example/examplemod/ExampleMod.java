@@ -28,7 +28,6 @@ import com.example.examplemod.events.ClientEventHandlers;
 import com.example.examplemod.events.ServerEventHandlers;
 import com.example.examplemod.network.Channel;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import javafx.util.Pair;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
@@ -112,7 +111,7 @@ public class ExampleMod
                 LOGGER.debug(String.format("[%s] Received Constant Update request from '%s'. Content: %s",
                         NAME, imcMessage.getSenderModId(), imcMessage.getMessageSupplier().get()));
 
-                Pair message = (Pair) imcMessage.getMessageSupplier().get();
+                Map.Entry message = (Map.Entry) imcMessage.getMessageSupplier().get();
 
                 try {
                     CONFIG.updateConstants(String.valueOf(message.getKey()), message.getValue());

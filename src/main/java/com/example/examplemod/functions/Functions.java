@@ -28,7 +28,6 @@ import com.example.examplemod.Config;
 import com.example.examplemod.ExampleMod;
 import com.example.examplemod.events.ClientEventHandlers;
 import com.example.examplemod.network.*;
-import javafx.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
@@ -48,6 +47,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
 
 import static com.example.examplemod.ExampleMod.CONFIG;
@@ -722,7 +722,7 @@ public class Functions {
             // Move to an empty slot
             if (player.openContainer == player.container
                     || player.openContainer instanceof CreativeScreen.CreativeContainer) {
-                Pair<ArrayList<ItemStack>, ArrayList<ItemStack>> temp = splitInventory(
+                Map.Entry<ArrayList<ItemStack>, ArrayList<ItemStack>> temp = splitInventory(
                         player.inventory.mainInventory, hotbarSize
                 );
 
@@ -770,7 +770,7 @@ public class Functions {
         } else if (player.openContainer == player.container
                 || player.openContainer instanceof CreativeScreen.CreativeContainer) {
             // Move within inventory
-            Pair<ArrayList<ItemStack>, ArrayList<ItemStack>> temp = splitInventory(
+            Map.Entry<ArrayList<ItemStack>, ArrayList<ItemStack>> temp = splitInventory(
                     player.inventory.mainInventory, hotbarSize
             );
 
@@ -1119,9 +1119,9 @@ public class Functions {
         return excluded;
     }
 
-    private static Pair<ArrayList<ItemStack>, ArrayList<ItemStack>> splitInventory(List<ItemStack> inventory,
+    private static Map.Entry<ArrayList<ItemStack>, ArrayList<ItemStack>> splitInventory(List<ItemStack> inventory,
                                                                                    int hotbarSize) {
-        return new Pair<>(new ArrayList<>(inventory.subList(0, hotbarSize)),
+        return new SimpleEntry<>(new ArrayList<>(inventory.subList(0, hotbarSize)),
                 new ArrayList<>(inventory.subList(hotbarSize, inventory.size())));
     }
 
