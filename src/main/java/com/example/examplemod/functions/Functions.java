@@ -64,12 +64,13 @@ public class Functions {
         /** Inventories should not be sorted. */ BLACKLIST
     }
 
+    /** The amount of items to move between inventories. */
     public enum MoveType {
-        MOVE_ALL,
-        MOVE_ALL_TYPE,
-        MOVE_STACK,
-        MOVE_INT,
-        MOVE_EMPTY
+        /** Move full inventory. */ MOVE_ALL,
+        /** Move all items of the same type. */ MOVE_ALL_TYPE,
+        /** Move the all items at the slot. */ MOVE_STACK,
+        /** Move the given amount. */ MOVE_INT,
+        /** Move slot to an empty slot. */ MOVE_EMPTY
     }
 
     private enum Mode {
@@ -199,7 +200,7 @@ public class Functions {
             for (int i = 0; i <= index; i++) {
                 ItemStack currItemStack = inventory.mainInventory.get(i);
 
-                if (currItemStack.getItem().toString().equals("air")) {
+                if (isAir(currItemStack)) {
                     if (i < hotbarSize) {
                         lastEmptyHotbar = i;
                     } else {
@@ -267,6 +268,243 @@ public class Functions {
     }
 
     @OnlyIn(Dist.CLIENT)
+    public static boolean craftItem(ItemStack craftResult, PlayerEntity player) {
+        ArrayList<ItemStack> playerInventory = new ArrayList<>(player.inventory.mainInventory);
+        ArrayList<Integer> airIndexes = new ArrayList<>();
+
+        int remaining = craftResult.getCount();
+
+        for (int index = 0; index < playerInventory.size(); index++) {
+            ItemStack itemStack = playerInventory.get(index);
+            if (itemStack.getCount() == itemStack.getMaxStackSize() || itemStack.getItem() != craftResult.getItem()
+                    || itemStack.getTag() != craftResult.getTag()) {
+                if (isAir(itemStack)) airIndexes.add(index);
+                continue;
+            }
+
+            int delta = itemStack.getMaxStackSize() - itemStack.getCount();
+
+            if (delta >= remaining) {
+                // Move All
+                itemStack.setCount(itemStack.getCount() + remaining);
+                playerInventory.set(index, itemStack);
+
+                remaining = 0;
+                break;
+
+            } else if (delta > 0) {
+                itemStack.setCount(itemStack.getMaxStackSize());
+                playerInventory.set(index, itemStack);
+
+                remaining -= delta;
+            }
+        }
+
+        if (remaining != 0 && !airIndexes.isEmpty() && airIndexes.size() * craftResult.getMaxStackSize() >= remaining) {
+            // Can fit remaining items into empty slots
+            int index = 0;
+            craftResult.setCount(craftResult.getMaxStackSize());
+
+            while (remaining >= craftResult.getMaxStackSize()) {
+                playerInventory.set(airIndexes.get(index++), craftResult.copy());
+                remaining -=  craftResult.getMaxStackSize();
+            }
+
+            if (remaining != 0) {
+                craftResult.setCount(remaining);
+                playerInventory.set(airIndexes.get(index), craftResult);
+
+                remaining = 0;
+            }
+        }
+
+        if (remaining == 0) {
+            Channel.INSTANCE.sendToServer(new SortPacket(playerInventory, 0));
+            return true;
+        }
+
+        return false;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void craftAllInventory(List<ItemStack> craftingItemStacks, ItemStack craftResult,
+                                            PlayerEntity player) {
+        ArrayList<ItemStack> playerInventory = new ArrayList<>(player.inventory.mainInventory);
+        ItemStack air = new ItemStack(Item.getItemById(0));
+
+        ArrayList<Integer> airIndexes = new ArrayList<>();
+        ArrayList<Integer> resultIndexes = new ArrayList<>();
+
+        HashMap<Item, Integer> itemCount = new HashMap<>();
+        HashMap<Item, Integer> uniqueCraftingItems = new HashMap<>();
+
+        for (ItemStack craftingItem: craftingItemStacks) {
+            // Get all unique items, and initialize counting map.
+            if (isAir(craftingItem)) continue;
+            if (itemCount.containsKey(craftingItem.getItem())) {
+                itemCount.replace(craftingItem.getItem(),
+                        itemCount.get(craftingItem.getItem()) + craftingItem.getCount());
+            } else {
+                itemCount.put(craftingItem.getItem(), craftingItem.getCount());
+            }
+
+            if (uniqueCraftingItems.containsKey(craftingItem.getItem())) {
+                uniqueCraftingItems.replace(craftingItem.getItem(), uniqueCraftingItems.get(craftingItem.getItem()) + 1);
+            } else {
+                uniqueCraftingItems.put(craftingItem.getItem(), 1);
+            }
+        }
+
+        for (int index = 0; index < playerInventory.size(); index++) {
+            // Get index of all empty slots and slots that can take the result.
+            // Get total of items for each item in craftingItems.
+            ItemStack itemStack = playerInventory.get(index);
+
+            if (isAir(itemStack)) {
+                airIndexes.add(index);
+            } else if (uniqueCraftingItems.containsKey(itemStack.getItem())) {
+                Item item = itemStack.getItem();
+                itemCount.replace(item, itemCount.get(item) + itemStack.getCount());
+
+                playerInventory.set(index, air.copy());
+                airIndexes.add(index);
+            } else if (itemStack.getItem() == craftResult.getItem()) {
+                resultIndexes.add(index);
+            }
+        }
+
+        // Calculate how many crafts can be done.
+        int maxCraft = 0;
+        for (Item item: itemCount.keySet()) {
+            // Maximum items in relation to item required per craft
+            int max = Math.floorDiv(itemCount.get(item), uniqueCraftingItems.get(item));
+
+            if (maxCraft == 0 && max != 0) {
+                maxCraft =  max;
+            } else if (max < maxCraft) {
+                maxCraft = max;
+            }
+        }
+        int craftedItems = maxCraft * craftResult.getCount();
+
+        // TODO: Figure out why one sandstone left
+        // Record how many items left
+        for (Item item: itemCount.keySet()) {
+            int itemsLeft = itemCount.get(item) - (maxCraft * uniqueCraftingItems.get(item));
+            itemCount.replace(item, itemsLeft);
+        }
+
+        // Fit as much input items as possible into the inventory and crafting grid
+        ArrayList<ItemStack> updatedCraftingGrid = new ArrayList<>();
+        for (Item item: itemCount.keySet()) {
+            int count = itemCount.get(item);
+            ItemStack itemStack = new ItemStack(item);
+
+            if (count == 0) continue;
+
+            // Fit into crafting grid.
+            for (int i = 0; i < uniqueCraftingItems.get(item); i++) {
+                if (count >= itemStack.getMaxStackSize()) {
+                    itemStack.setCount(itemStack.getMaxStackSize());
+                    updatedCraftingGrid.add(itemStack.copy());
+
+                    count -= itemStack.getMaxStackSize();
+                } else {
+                    itemStack.setCount(count);
+                    updatedCraftingGrid.add(itemStack.copy());
+
+                    count = 0;
+                }
+
+                if (count == 0) break;
+            }
+
+            // Fit into inventory
+            while (count > 0) {
+                if (count >= itemStack.getMaxStackSize()) {
+                    itemStack.setCount(itemStack.getMaxStackSize());
+                    count -= itemStack.getMaxStackSize();
+                } else {
+                    itemStack.setCount(count);
+                    count = 0;
+                }
+                if (airIndexes.size() != 0) {
+                    playerInventory.set(airIndexes.remove(0), itemStack.copy());
+                }
+            }
+
+            itemCount.replace(item, count);
+        }
+
+        // Fit as many craft results as possible into the inventory
+        for (int index: resultIndexes) {
+            ItemStack invItem = playerInventory.get(index);
+            int delta = invItem.getMaxStackSize() - invItem.getCount();
+            if (craftedItems >= delta) {
+                invItem.setCount(invItem.getMaxStackSize());
+                craftedItems -= delta;
+            } else {
+                invItem.setCount(invItem.getCount() + craftedItems);
+                craftedItems = 0;
+            }
+
+            playerInventory.set(index, invItem);
+
+            if (craftedItems == 0) {
+                break;
+            }
+        }
+        ArrayList<ItemStack> overFlow = new ArrayList<>();
+
+        while (craftedItems > 0) {
+            if (craftedItems >= craftResult.getMaxStackSize()) {
+                craftResult.setCount(craftResult.getMaxStackSize());
+                craftedItems -= craftResult.getMaxStackSize();
+            } else {
+                craftResult.setCount(craftResult.getCount() + craftedItems);
+                craftedItems = 0;
+            }
+            if (airIndexes.size() > 0) {
+                playerInventory.set(airIndexes.remove(0), craftResult.copy());
+            } else {
+                overFlow.add(craftResult.copy());
+            }
+        }
+
+        // Update Empty Spots
+        while (updatedCraftingGrid.size() < craftingItemStacks.size()) {
+            updatedCraftingGrid.add(air.copy());
+        }
+
+        // Send inventory and crafting grid to server
+        Channel.INSTANCE.sendToServer(new SortPacket(playerInventory, 0));
+        Channel.INSTANCE.sendToServer(new OptimizationPacket(updatedCraftingGrid));
+
+        // Dump any items that didn't fit
+        for (Item item: itemCount.keySet()) {
+            int count = itemCount.get(item);
+            if (count > 0) {
+                ItemStack result = new ItemStack(item);
+                while (count > 0) {
+                    if (count >= result.getMaxStackSize()) {
+                        result.setCount(result.getMaxStackSize());
+                        count -= result.getMaxStackSize();
+                    } else {
+                        result.setCount(count);
+                        count = 0;
+                    }
+
+                    overFlow.add(result.copy());
+                }
+
+                itemCount.replace(item, 0);
+            }
+        }
+
+        Channel.INSTANCE.sendToServer(new OverFlowPacket(overFlow));
+    }
+
+    @OnlyIn(Dist.CLIENT)
     public static boolean moveItem(ArrayList<ItemStack> oldInventory, ArrayList<ItemStack> newInventory,
                                 int oldIndex, int number, boolean oldToNew) {
         number = Math.abs(number);
@@ -282,7 +520,7 @@ public class Functions {
             for (int index = 0; index < newInventory.size(); index++) {
                 ItemStack newItem = newInventory.get(index);
                 if (newItem.getCount() == newItem.getMaxStackSize()) continue;
-                if (newItem.getItem().toString().equals("air")) {
+                if (isAir(newItem)) {
                     if (emptyIndex == -1) {
                         emptyIndex = index;
                     }
@@ -336,7 +574,7 @@ public class Functions {
 
             for (int index = newInventory.size() - 1; index >= 0; index--) {
                 ItemStack newItem = newInventory.get(index);
-                if (newItem.getItem().toString().equals("air")) continue;
+                if (isAir(newItem)) continue;
 
                 CompoundNBT newTag = newItem.getTag();
                 if (newTag == null) newTag = new CompoundNBT();
@@ -422,7 +660,7 @@ public class Functions {
         }
 
         if (moveType == MoveType.MOVE_STACK) {
-            count = slot.getSlotStackLimit();
+            count = slot.getStack().getCount();
         }
 
         if (moveType == MoveType.MOVE_ALL_TYPE) {
@@ -580,10 +818,14 @@ public class Functions {
         }
     }
 
+    public static boolean isAir(ItemStack itemStack) {
+        return itemStack.getItem().toString().equals("air");
+    }
+
     private static boolean findEmptySlot(int slotIndex, ArrayList<ItemStack> origin, ArrayList<ItemStack> destination) {
         boolean updated = false;
         for (int i = 0; i < destination.size(); i++) {
-            if (destination.get(i).getItem().toString().equals("air")) {
+            if (isAir(destination.get(i))) {
                 updated = true;
                 destination.set(i, origin.set(slotIndex, new ItemStack(Item.getItemById(0))));
 
@@ -870,7 +1112,7 @@ public class Functions {
                 continue;
             }
 
-            if (!item.getItem().toString().equals("air")) {
+            if (!isAir(item)) {
                 excluded.add(item);
             }
         }
@@ -890,7 +1132,7 @@ public class Functions {
 
         if (item == null) {
             for (int index = 0; index < origin.size(); index++) {
-                if (origin.get(index).getItem().toString().equals("air")) continue;
+                if (isAir(origin.get(index))) continue;
 
                 if (Functions.moveItem(origin, newInv, index, origin.get(index).getCount(), true)) {
                     toSend = true;
@@ -968,7 +1210,7 @@ public class Functions {
 
                 } else {
                     for (ItemStack item: invArray) {
-                        if (!item.getItem().toString().equals("air")) {
+                        if (!isAir(item)) {
                             toSend.add(item);
                         }
                     }
@@ -1007,7 +1249,7 @@ public class Functions {
                     continue;
                 }
 
-                if (!slot.getStack().getItem().toString().equals("air")) {
+                if (!isAir(slot.getStack())) {
                     toSend.add(slot.getStack());
                 }
 
@@ -1158,7 +1400,7 @@ public class Functions {
 
             ItemStack heldItem = playerEntity.getHeldItem(hand);
 
-            if (heldItem.getItem().toString().equals("air")) {
+            if (isAir(heldItem)) {
                 // Finding all instances of the item
                 ArrayList<Integer> slots = new ArrayList<>();
 
