@@ -330,7 +330,6 @@ public class Functions {
     public static void craftAllInventory(List<ItemStack> craftingItemStacks, ItemStack craftResult,
                                          PlayerEntity player) {
         ArrayList<ItemStack> playerInventory = new ArrayList<>(player.inventory.mainInventory);
-        ItemStack air = new ItemStack(Item.getItemById(0));
 
         ArrayList<Integer> airIndexes = new ArrayList<>();
         ArrayList<Integer> resultIndexes = new ArrayList<>();
@@ -366,7 +365,7 @@ public class Functions {
                 Item item = itemStack.getItem();
                 itemCount.replace(item, itemCount.get(item) + itemStack.getCount());
 
-                playerInventory.set(index, air.copy());
+                playerInventory.set(index, ExampleMod.AIR.copy());
                 airIndexes.add(index);
             } else if (itemStack.getItem() == craftResult.getItem()) {
                 resultIndexes.add(index);
@@ -472,7 +471,7 @@ public class Functions {
 
         // Update Empty Spots
         while (updatedCraftingGrid.size() < craftingItemStacks.size()) {
-            updatedCraftingGrid.add(air.copy());
+            updatedCraftingGrid.add(ExampleMod.AIR.copy());
         }
 
         // Send inventory and crafting grid to server
@@ -826,7 +825,7 @@ public class Functions {
         for (int i = 0; i < destination.size(); i++) {
             if (isAir(destination.get(i))) {
                 updated = true;
-                destination.set(i, origin.set(slotIndex, new ItemStack(Item.getItemById(0))));
+                destination.set(i, origin.set(slotIndex, ExampleMod.AIR));
 
                 break;
             }
@@ -918,19 +917,18 @@ public class Functions {
         }
 
         ArrayList<ItemStack> sorted = new ArrayList<>();
-        ItemStack filler = new ItemStack(Item.getItemById(0));
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 if (vertical) {
                     if (array[i][j] == null) {
-                        sorted.add(filler);
+                        sorted.add(ExampleMod.AIR);
                     } else {
                         sorted.add(array[i][j]);
                     }
                 } else {
                     if (array[j][i] == null) {
-                        sorted.add(filler);
+                        sorted.add(ExampleMod.AIR);
                     } else {
                         sorted.add(array[j][i]);
                     }
@@ -1103,13 +1101,8 @@ public class Functions {
     private static ArrayList<ItemStack> excludeHotbar(List<ItemStack> inventory, int hotbarSize) {
         ArrayList<ItemStack> excluded = new ArrayList<>();
 
-        int index = 0;
-        for (ItemStack item: inventory) {
-            if (index < hotbarSize) {
-                // Excluding hotbar items
-                index++;
-                continue;
-            }
+        for (int i = hotbarSize; i < inventory.size(); i++) {
+            ItemStack item = inventory.get(i);
 
             if (!isAir(item)) {
                 excluded.add(item);
@@ -1204,16 +1197,7 @@ public class Functions {
                     skipHotbar = false;
                 }
 
-                if (skipHotbar) {
-                    toSend = excludeHotbar(invArray, hotbarSize);
-
-                } else {
-                    for (ItemStack item: invArray) {
-                        if (!isAir(item)) {
-                            toSend.add(item);
-                        }
-                    }
-                }
+                toSend = excludeHotbar(invArray, skipHotbar ? hotbarSize : 0);
 
                 // Sorting the array
                 Mode sortOrder = getSortOrder();
@@ -1232,11 +1216,16 @@ public class Functions {
                 LOGGER.debug(String.format("[%s] Sending network sort packet", ExampleMod.NAME));
                 Channel.INSTANCE.sendToServer(new SortPacket(toSend, hotbarSize));
 
+                if (skipHotbar) {
+                    for (int i = 0; i < hotbarSize; i++) {
+                        toSend.add(i, invArray.get(i));
+                    }
+                }
+
             } else {
                 LOGGER.warn(String.format("[%s] Client side sort code detected on the logical server. Aborting.",
                         ExampleMod.NAME));
                 return false;
-
             }
 
         } else {
@@ -1263,7 +1252,7 @@ public class Functions {
                 return true;
             }
 
-            if (Objects.requireNonNull(container.getMinecraft().world).isRemote) {
+            if (container.getMinecraft().world != null && container.getMinecraft().world.isRemote) {
                 // Sorting the array
                 Mode sortOrder = getSortOrder();
 
@@ -1358,6 +1347,10 @@ public class Functions {
 
             LOGGER.debug(String.format("[%s] Sending network sort packet", ExampleMod.NAME));
             Channel.INSTANCE.sendToServer(new SortPacket(toSend, hotbarSize));
+
+            for (int i = 0; i < hotbarSize; i++) {
+                toSend.add(i, itemList.get(i));
+            }
 
         } else {
             LOGGER.warn(String.format("[%s] Client side sort code detected on the logical server. Aborting.",

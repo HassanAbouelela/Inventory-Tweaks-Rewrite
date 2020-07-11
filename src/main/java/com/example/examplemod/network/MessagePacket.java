@@ -22,27 +22,33 @@
  * SOFTWARE.
  */
 
-package com.example.examplemod.functions.commands;
+package com.example.examplemod.network;
 
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.network.PacketBuffer;
 
-import java.util.ArrayList;
+public class MessagePacket {
+    private String message;
+    private boolean error;
 
-public class Reload implements Command<CommandSource> {
-    @Override
-    public int run(CommandContext<CommandSource> ctx) {
-        try {
-            CommandControl.sendToClient(ctx.getSource().asPlayer(), "reload", new ArrayList<>());
-            return 0;
+    MessagePacket(String message, boolean error) {
+        this.message = message;
+        this.error = error;
+    }
 
-        } catch (CommandSyntaxException e) {
-            ctx.getSource().sendErrorMessage(new StringTextComponent("Reload Failed: " + e));
-            return 1;
+    public String getMessage() {
+        return this.message;
+    }
 
-        }
+    public boolean isError() {
+        return this.error;
+    }
+
+    static void encode(MessagePacket message, PacketBuffer buffer) {
+        buffer.writeString(message.message);
+        buffer.writeBoolean(message.error);
+    }
+
+    static MessagePacket decode(PacketBuffer buffer) {
+        return new MessagePacket(buffer.readString(), buffer.readBoolean());
     }
 }

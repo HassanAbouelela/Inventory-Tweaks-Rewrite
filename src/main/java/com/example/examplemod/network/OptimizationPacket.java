@@ -24,7 +24,7 @@
 
 package com.example.examplemod.network;
 
-import net.minecraft.item.Item;
+import com.example.examplemod.ExampleMod;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 
@@ -45,10 +45,9 @@ public class OptimizationPacket {
     static void encode(OptimizationPacket message, PacketBuffer buffer) {
         buffer.writeInt(message.optimizedList.size());
 
-        ItemStack filler = new ItemStack(Item.getItemById(0));
         for (ItemStack itemStack: message.optimizedList) {
             if (itemStack == null) {
-                buffer.writeItemStack(filler);
+                buffer.writeItemStack(ExampleMod.AIR);
             } else {
                 buffer.writeItemStack(itemStack);
             }

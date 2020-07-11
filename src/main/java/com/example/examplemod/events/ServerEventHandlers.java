@@ -25,12 +25,13 @@
 package com.example.examplemod.events;
 
 import com.example.examplemod.ExampleMod;
-import com.example.examplemod.functions.commands.Commands;
+import com.example.examplemod.functions.commands.CommandControl;
 import com.example.examplemod.network.*;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.WorkbenchContainer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -46,7 +47,7 @@ public class ServerEventHandlers {
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
         LOGGER.info(String.format("Server Starting, %s Active", ExampleMod.NAME));
-        Commands.register(event.getCommandDispatcher());
+        CommandControl.register(event.getCommandDispatcher());
     }
 
     public static void handleOverflow(OverFlowPacket message, Supplier<NetworkEvent.Context> ctx) {
@@ -120,9 +121,8 @@ public class ServerEventHandlers {
                     sender.inventory.setInventorySlotContents(index++, item);
                 }
 
-                ItemStack fill = new ItemStack(Item.getItemById(0));
                 while (index < sender.inventory.mainInventory.size()) {
-                    sender.inventory.setInventorySlotContents(index++, fill);
+                    sender.inventory.setInventorySlotContents(index++, ExampleMod.AIR);
                 }
 
                 sender.sendContainerToPlayer(sender.container);
@@ -133,9 +133,8 @@ public class ServerEventHandlers {
                     sender.openContainer.putStackInSlot(index++, item);
                 }
 
-                ItemStack fill = new ItemStack(Item.getItemById(0));
                 while (index < message.getSize()) {
-                    sender.openContainer.putStackInSlot(index++, fill);
+                    sender.openContainer.putStackInSlot(index++, ExampleMod.AIR);
                 }
 
                 sender.sendContainerToPlayer(sender.openContainer);
@@ -261,6 +260,24 @@ public class ServerEventHandlers {
             }
         });
 
+        ctx.get().setPacketHandled(true);
+    }
+
+    public static void handleMessage(MessagePacket message, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            StringTextComponent stringComponent = new StringTextComponent(message.getMessage());
+            if (message.isError()) {
+                stringComponent.applyTextStyle(TextFormatting.RED);
+            }
+
+            ServerPlayerEntity sender = ctx.get().getSender();
+
+            if (sender != null) {
+                sender.sendMessage(stringComponent);
+            } else {
+                LOGGER.warn(String.format("[%s] Failed to deliver server message to player.", ExampleMod.NAME));
+            }
+        });
         ctx.get().setPacketHandled(true);
     }
 }

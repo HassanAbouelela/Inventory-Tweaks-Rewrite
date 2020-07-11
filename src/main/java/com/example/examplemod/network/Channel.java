@@ -64,8 +64,9 @@ public class Channel {
             }
     );
 
-    private int id = 0;
+    private static int id = 0;
     public void register() {
+        // Player -> Server
         INSTANCE.registerMessage(id++, OverFlowPacket.class,
                 OverFlowPacket::encode, OverFlowPacket::decode, ServerEventHandlers::handleOverflow);
         INSTANCE.registerMessage(id++, SortPacket.class,
@@ -78,6 +79,12 @@ public class Channel {
                 OptimizationPacket::encode, OptimizationPacket::decode, ServerEventHandlers::handleOptimization);
         INSTANCE.registerMessage(id++, DropPacket.class,
                 DropPacket::encode, DropPacket::decode, ServerEventHandlers::handleDrop);
+        INSTANCE.registerMessage(id++, MessagePacket.class,
+                MessagePacket::encode, MessagePacket::decode, ServerEventHandlers::handleMessage);
+
+        // Server -> Player
+        INSTANCE.registerMessage(id++, EmptyPackets.class,
+                EmptyPackets::encode, EmptyPackets::decode, EmptyPackets::handle);
     }
 }
 
