@@ -68,4 +68,3 @@ public class RefillPacket {
         return new RefillPacket(hand, buffer.readInt());
     }
 }
-

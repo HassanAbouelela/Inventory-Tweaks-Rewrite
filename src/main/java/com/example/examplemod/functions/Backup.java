@@ -33,7 +33,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -44,9 +43,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 
-class Backup {
+public class Backup {
     // Getting Event Logger
     private static final Logger LOGGER = LogManager.getLogger();
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -212,66 +210,87 @@ class Backup {
      * Read a backup file and get the items within it.
      *
      * @param config The settings to follow while performing restore.
-     * @param file The path of the backup file to restore from. Use "latest" to restore the latest backup.
-     * @return The items read from the file.
+     * @param file The name of the backup to restore from. Use "latest" to restore the latest backup.
+     * @param result A list to write results to.
      *
-     * @throws NullPointerException Could not find the specified backup file.
+     * @return The success of the operation.
+     *   1: Can't find file `file`.
+     *   2: Can't open file.
+     *   3: Can't find index json file in folder.
+     *   5: Other (logged).
+     *  10: Can't locate game folder.
      */
-    @Nullable
     @OnlyIn(Dist.CLIENT)
-    static ArrayList<ItemStack> restore(Map config, String file) throws NullPointerException {
+    public static int restore(Map config, String file, ArrayList<ItemStack> result) {
         // Getting backup file
         File backupFile = null;
-        if (file.toLowerCase().equals("latest")){
-            if (config.get("Location (Path)").equals("Default")){
-                String folderName = Objects.requireNonNull(Minecraft.getInstance().getIntegratedServer())
-                        .getFolderName();
-                Path backupPath = Paths.get((
-                        Minecraft.getInstance().gameDir + "/saves/" + folderName + "/" + ExampleMod.NAME_SHORT + "Backups"
-                ));
+
+        if (config.get("Location (Path)").equals("Default")){
+            if (Minecraft.getInstance().getIntegratedServer() == null) {
+                LOGGER.warn(String.format("[%s] Could not get game folder.", ExampleMod.NAME));
+                return 10;
+            }
+
+            String folderName = Minecraft.getInstance().getIntegratedServer().getFolderName();
+            Path backupPath = Paths.get(
+                    Minecraft.getInstance().gameDir.getAbsolutePath(), "saves", folderName, ExampleMod.NAME_SHORT + "Backups"
+            );
+            if (file.toLowerCase().equals("latest")) {
                 Path latest = getLatest(backupPath);
                 if (latest == null) {
                     LOGGER.warn(String.format("[%s] Restore Error: Could not find folder", ExampleMod.NAME));
-                    throw new NullPointerException();
+                    return 1;
                 }
                 backupFile = latest.toFile();
-
             } else {
-                Path backupPath = Paths.get((String) config.get("Location (Path)"));
+                backupFile = Paths.get(backupPath.toFile().getAbsolutePath(), file).toFile();
+            }
+
+        } else {
+            Path backupPath = Paths.get((String) config.get("Location (Path)"));
+            if (file.toLowerCase().equals("latest")) {
                 Path latest = getLatest(backupPath);
                 if (latest != null) {
                     backupFile = latest.toFile();
                 }
+            } else {
+                backupFile = Paths.get(backupPath.toFile().getAbsolutePath(), file).toFile();
             }
-        } else {
-            backupFile = Paths.get(file).toFile();
         }
 
         if (backupFile == null || !Files.exists(backupFile.toPath())) {
             LOGGER.warn(String.format("[%s] Restore Error: Can't find file.", ExampleMod.NAME));
-            return null;
+            return 1;
+        }
+
+        if (backupFile.isDirectory()) {
+            if (backupFile.listFiles((ignored, name) -> name.equals(file + ".json")) != null) {
+                backupFile = Paths.get(backupFile.getAbsoluteFile().getAbsolutePath(), file + ".json").toFile();
+            } else {
+                return 3;
+            }
         }
 
         // Reading file
         try {
             if (Files.isReadable(backupFile.toPath())){
                 Object[] backupItems = mapper.readValue(backupFile, Object[].class);
-                ArrayList<ItemStack> items = new ArrayList<>();
 
                 for (Object item: backupItems) {
-                    items.add(ItemStackSerialization.deserialize((String) item));
+                    result.add(ItemStackSerialization.deserialize((String) item));
                 }
 
-                return items;
+                return 0;
 
             } else {
                 LOGGER.warn(String.format("[%s] Restore Error: Can't read file.", ExampleMod.NAME));
-                return null;
+                return 2;
             }
+
         } catch (Exception error) {
             LOGGER.error(String.format("[%s] Restore Error: (%s) - %s", ExampleMod.NAME,
                     error.getClass().getCanonicalName(), Arrays.toString(error.getStackTrace())));
-            return null;
+            return 5;
         }
     }
 }

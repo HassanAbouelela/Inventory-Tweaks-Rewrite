@@ -28,6 +28,8 @@ import com.example.examplemod.events.ClientEventHandlers;
 import com.example.examplemod.events.ServerEventHandlers;
 import com.example.examplemod.network.Channel;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
@@ -61,6 +63,7 @@ public class ExampleMod
     public static final String NAME = "Inventory Tweaks Rewrite";
     public static final String NAME_SHORT = "ITR";
     public static Config CONFIG = null;
+    public static ItemStack AIR = new ItemStack(Item.getItemById(0));
 //    public static boolean serverAllowed = false; - Not Implemented
 
     static {
