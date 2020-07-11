@@ -1,25 +1,6 @@
 /*
- * MIT License
- *
  * Copyright (c) 2020 Hassan Abouelela
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the MIT License
  */
 
 package com.example.examplemod;
@@ -62,8 +43,8 @@ public class ExampleMod
     public static final String ID = "examplemod";
     public static final String NAME = "Inventory Tweaks Rewrite";
     public static final String NAME_SHORT = "ITR";
+    public static final ItemStack AIR = new ItemStack(Item.getItemById(0));
     public static Config CONFIG = null;
-    public static ItemStack AIR = new ItemStack(Item.getItemById(0));
 //    public static boolean serverAllowed = false; - Not Implemented
 
     static {
@@ -83,27 +64,12 @@ public class ExampleMod
         // Register network communications
         new Channel().register();
 
-        // Allow server if protocol matches, and check override. - Not Implemented
-//        if (!serverAllowed) {
-//            Map config = CONFIG.getMap("Unsupported Servers");
-//            if (config != null && (config.containsKey("Allow") && (boolean) config.get("Allow"))) {
-//                LOGGER.warn(String.format("[%s] Connecting to unsupported server because of setting override.",
-//                        ExampleMod.NAME));
-//
-//            } else {
-//                LOGGER.warn(String.format("[%s] Server incompatible, mod disabled.", ExampleMod.NAME));
-//                return;
-//            }
-//        }
-
         // Register event handlers
         ClientEventHandlers clientEventHandlers = new ClientEventHandlers();
         MinecraftForge.EVENT_BUS.register(clientEventHandlers);
 
         ServerEventHandlers serverEventHandlers = new ServerEventHandlers();
         MinecraftForge.EVENT_BUS.register(serverEventHandlers);
-
-//        InterModComms.sendTo(ID, "Add Constant", (Supplier<Pair<String, Integer>>) () -> new Pair<>("A", 3));
     }
 
     private void processIMC(final InterModProcessEvent event) {
