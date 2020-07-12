@@ -15,11 +15,13 @@ import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.screen.inventory.CreativeScreen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraft.util.Hand;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.api.distmarker.Dist;
@@ -30,6 +32,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.example.examplemod.ExampleMod.CONFIG;
 
@@ -489,6 +493,11 @@ public class Functions {
         number = Math.abs(number);
         int notMoved = number;
 
+        if (oldIndex >= oldInventory.size()) {
+            LOGGER.warn(String.format("[%s] Move item called outside of inventory.", ExampleMod.NAME));
+            return true;
+        }
+
         CompoundNBT tag = oldInventory.get(oldIndex).getTag();
         if (tag == null) tag = new CompoundNBT();
         tag.putInt("Custom-ID-Tag", Item.getIdFromItem(oldInventory.get(oldIndex).getItem()));
@@ -799,6 +808,31 @@ public class Functions {
 
     public static boolean isAir(ItemStack itemStack) {
         return itemStack.getItem().toString().equals("air");
+    }
+
+    /**
+     * Get the level of a particular tag if possible, else get 0.
+     *
+     * @param tagName The name of the tag as it appears in an NBT tag.
+     * @param itemStack The ItemStack to look in for the tag.
+     *
+     * @return The level of the tag or 0.
+     */
+    static int getTagLevel(String tagName, ItemStack itemStack) {
+        if (itemStack.isEnchanted()) {
+            Pattern pattern = Pattern.compile("(?<=lvl:)([0-9]+)");
+            for (INBT nbt : itemStack.getEnchantmentTagList()) {
+                if (nbt.getString().contains(tagName)) {
+                    Matcher matcher = pattern.matcher(nbt.getString());
+
+                    if (matcher.find()) {
+                        return Integer.parseInt(matcher.group());
+                    }
+                }
+            }
+        }
+
+        return 0;
     }
 
     private static boolean findEmptySlot(int slotIndex, ArrayList<ItemStack> origin, ArrayList<ItemStack> destination) {
@@ -1159,7 +1193,62 @@ public class Functions {
                 return false;
             }
 
-            NonNullList<ItemStack> invArray = player.inventory.mainInventory;
+            NonNullList<ItemStack> armorInv = player.inventory.armorInventory;
+            NonNullList<ItemStack> mainInv = player.inventory.mainInventory;
+
+            ArrayList<Map.Entry<ItemStack, Integer>> fullInv = new ArrayList<>();
+
+            for (ItemStack itemStack: armorInv) {
+                fullInv.add(new SimpleEntry<>(itemStack, -1));
+            }
+
+            NonNullList<ItemStack> invArray = NonNullList.create();
+            int id = 0;
+            for (ItemStack itemStack: mainInv) {
+                ItemStack newItem = itemStack.copy();
+                fullInv.add(new SimpleEntry<>(newItem, id++));
+                invArray.add(newItem);
+            }
+
+            Map config = CONFIG.getMap("Sort Options");
+            if (config != null && config.containsKey("Equip Best Armor on Sort") &&
+                    (boolean) config.get("Equip Best Armor on Sort")) {
+                int[] armorSlots = ArmorEquip.getBestArmor(fullInv);
+                for (int i = 0; i < armorSlots.length; i++) {
+                    if (armorSlots[i] >= 0) {
+                        EquipmentSlotType equipSlot;
+                        switch (i) {
+                            case 0:
+                                // Helmet
+                                equipSlot = EquipmentSlotType.HEAD;
+                                break;
+
+                            case 1:
+                                // Chest Plate
+                                equipSlot = EquipmentSlotType.CHEST;
+                                break;
+
+                            case 2:
+                                // Leggings
+                                equipSlot = EquipmentSlotType.LEGS;
+                                break;
+
+                            case 3:
+                                // Boots
+                                equipSlot = EquipmentSlotType.FEET;
+                                break;
+
+                            default:
+                                continue;
+                        }
+
+                        ItemStack newItem = invArray.set(armorSlots[i], armorInv.get(3 - i));
+
+                        LOGGER.debug(String.format("[%s] Sending network equip packet.", ExampleMod.NAME));
+                        Channel.INSTANCE.sendToServer(new EquipArmorPacket(newItem, equipSlot));
+                    }
+                }
+            }
 
             // Stop if inventory is empty
             if (invArray.isEmpty()) {
@@ -1194,14 +1283,14 @@ public class Functions {
 
                 maxSize = player.inventory.mainInventory.size();
 
-                LOGGER.debug(String.format("[%s] Sending network sort packet", ExampleMod.NAME));
-                Channel.INSTANCE.sendToServer(new SortPacket(toSend, hotbarSize));
-
                 if (skipHotbar) {
                     for (int i = 0; i < hotbarSize; i++) {
                         toSend.add(i, invArray.get(i));
                     }
                 }
+
+                LOGGER.debug(String.format("[%s] Sending network sort packet", ExampleMod.NAME));
+                Channel.INSTANCE.sendToServer(new SortPacket(toSend, 0));
 
             } else {
                 LOGGER.warn(String.format("[%s] Client side sort code detected on the logical server. Aborting.",

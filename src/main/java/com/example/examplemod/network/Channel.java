@@ -62,6 +62,8 @@ public class Channel {
                 DropPacket::encode, DropPacket::decode, ServerEventHandlers::handleDrop);
         INSTANCE.registerMessage(id++, MessagePacket.class,
                 MessagePacket::encode, MessagePacket::decode, ServerEventHandlers::handleMessage);
+        INSTANCE.registerMessage(id++, EquipArmorPacket.class,
+                EquipArmorPacket::encode, EquipArmorPacket::decode, ServerEventHandlers::handleEquip);
 
         // Server -> Player
         INSTANCE.registerMessage(id++, EmptyPackets.class,
