@@ -19,16 +19,41 @@ import java.util.function.Supplier;
 
 import static com.example.examplemod.ExampleMod.CONFIG;
 
+/**
+ * Class to send instructions to the client.
+ */
 public class EmptyPackets {
-    private final String instruction;
-    private final ArrayList<String> args;
+    /**
+     * Event logger.
+     */
     private static final Logger LOGGER = LogManager.getLogger();
 
+    /**
+     * The instruction.
+     */
+    private final String instruction;
+    /**
+     * The arguments for the instruction.
+     */
+    private final ArrayList<String> args;
+
+    /**
+     * Helper class to send instructions to be performed on the client.
+     *
+     * @param instruction The instruction to perform. Options are "reload" to reload settings, and "restore" for backups.
+     * @param args The arguments for the instruction.
+     */
     public EmptyPackets(String instruction, ArrayList<String> args) {
         this.instruction = instruction;
         this.args = args;
     }
 
+    /**
+     * The encoder for this packet.
+     *
+     * @param message The packet.
+     * @param buffer The buffer to write to.
+     */
     static void encode(EmptyPackets message, PacketBuffer buffer) {
         buffer.writeInt(message.args.size());
         for (String arg: message.args) {
@@ -38,6 +63,12 @@ public class EmptyPackets {
         buffer.writeString(message.instruction);
     }
 
+    /**
+     * The decoder for this packet.
+     *
+     * @param buffer The buffer to read from.
+     * @return The packet.
+     */
     static EmptyPackets decode(PacketBuffer buffer) {
         ArrayList<String> args = new ArrayList<>();
         int argLength = buffer.readInt();
@@ -49,6 +80,14 @@ public class EmptyPackets {
         return new EmptyPackets(buffer.readString(), args);
     }
 
+    /**
+     * The handler for this packet. All logic performed on the client side*.
+     *
+     * *in theory.
+     *
+     * @param message An {@link EmptyPackets}
+     * @param ctx Supplier of the network event context.
+     */
     static void handle(EmptyPackets message, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             switch (message.instruction.toLowerCase()) {
@@ -67,12 +106,23 @@ public class EmptyPackets {
         ctx.get().setPacketHandled(true);
     }
 
+    /**
+     * Wrapper method to display text to player in game.
+     *
+     * @param error Whether the message is an error (displays in red).
+     * @param message The message to send.
+     *
+     * @return The message.
+     */
     private static String sendMessage(boolean error, String message) {
         Channel.INSTANCE.sendToServer(new MessagePacket(message, error));
 
         return message;
     }
 
+    /**
+     * Wrapper method to reload Config options.
+     */
     private static void reload() {
         int result = ExampleMod.CONFIG.load();
 
@@ -109,6 +159,11 @@ public class EmptyPackets {
         }
     }
 
+    /**
+     * Wrapper method to restore a backup.
+     *
+     * @param args An ArrayList with the first argument being the source to restore from.
+     */
     private static void restore(ArrayList<String> args) {
         Map backups = CONFIG.getMap("Backups");
         if (backups == null) {

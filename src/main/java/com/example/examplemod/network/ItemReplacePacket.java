@@ -8,6 +8,9 @@ package com.example.examplemod.network;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.Hand;
 
+/**
+ * Class to switch items within a player inventory.
+ */
 public class ItemReplacePacket {
     private final Hand hand;
     private final int replacement;
@@ -15,6 +18,12 @@ public class ItemReplacePacket {
     private final boolean useHand;
     private final boolean inPlayerInventory;
 
+    /**
+     * Class to switch items within a player inventory.
+     *
+     * @param hand Main hand or off hand.
+     * @param replacement The item to place into the hand.
+     */
     public ItemReplacePacket(Hand hand, int replacement) {
         this.hand = hand;
         this.replacement = replacement;
@@ -23,14 +32,15 @@ public class ItemReplacePacket {
         this.inPlayerInventory = true;
     }
 
-    public ItemReplacePacket(int oldIndex, int replacement, boolean inPlayerInventory) {
-        this.hand = Hand.MAIN_HAND;
-        this.replacement = replacement;
-        this.oldIndex = oldIndex;
-        this.useHand = false;
-        this.inPlayerInventory = inPlayerInventory;
-    }
-
+    /**
+     * Class to switch items within a player inventory.
+     *
+     * @param hand Main hand or off hand or null.
+     * @param replacement The item to place.
+     * @param oldIndex The index to place the old item into.
+     * @param useHand Whether to use the held item.
+     * @param inPlayerInventory Whether the item is in the player's inventory or open container.
+     */
     private ItemReplacePacket(Hand hand, int replacement, int oldIndex, boolean useHand, boolean inPlayerInventory) {
         this.hand = hand;
         this.replacement = replacement;
@@ -39,26 +49,57 @@ public class ItemReplacePacket {
         this.inPlayerInventory = inPlayerInventory;
     }
 
-    public Hand getHand() {
+    /**
+     * Gets the hand to use.
+     *
+     * @return Main hand or off hand.
+     */
+    Hand getHand() {
         return this.hand;
     }
 
-    public int getReplacementIndex() {
+    /**
+     * Get the replacement index.
+     *
+     * @return Replacement index.
+     */
+    int getReplacementIndex() {
         return this.replacement;
     }
 
-    public int getOldIndex() {
+    /**
+     * Gets the old index.
+     *
+     * @return Old index.
+     */
+    int getOldIndex() {
         return this.oldIndex;
     }
 
-    public boolean useHand() {
+    /**
+     * Gets whether to use the hand.
+     *
+     * @return Whether to use the hand.
+     */
+    boolean useHand() {
         return this.useHand;
     }
 
-    public boolean isInPlayerInventory() {
+    /**
+     * Gets whether the old item is in the player's inventory of open container.
+     *
+     * @return Whether the old item is in the player's inventory of open container.
+     */
+    boolean isInPlayerInventory() {
         return this.inPlayerInventory;
     }
 
+    /**
+     * The encoder for this packet.
+     *
+     * @param message The packet.
+     * @param buffer The buffer to write to.
+     */
     static void encode(ItemReplacePacket message, PacketBuffer buffer) {
         if (message.hand == Hand.MAIN_HAND) {
             buffer.writeInt(0);
@@ -72,6 +113,12 @@ public class ItemReplacePacket {
         buffer.writeBoolean(message.inPlayerInventory);
     }
 
+    /**
+     * The decoder for this packet.
+     *
+     * @param buffer The buffer to read from.
+     * @return The packet.
+     */
     static ItemReplacePacket decode(PacketBuffer buffer) {
         Hand hand;
         int read = buffer.readInt();

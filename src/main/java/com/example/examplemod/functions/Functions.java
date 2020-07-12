@@ -37,19 +37,27 @@ import java.util.regex.Pattern;
 
 import static com.example.examplemod.ExampleMod.CONFIG;
 
-
+/**
+ * Class for general helper methods.
+ */
 public class Functions {
-    // Getting Event Logger
+    /**
+     * Event Logger.
+     */
     private static final Logger LOGGER = LogManager.getLogger();
 
-    /** The permission level of a given class for sorting purposes. */
+    /**
+     * The permission level of a given class for sorting purposes.
+     */
     public enum Permission {
         /** The player inventory takes priority while sorting. */ PLAYER_FIRST,
         /** The open inventory takes priority while sorting. */ INVENTORY_FIRST,
         /** Inventories should not be sorted. */ BLACKLIST
     }
 
-    /** The amount of items to move between inventories. */
+    /**
+     * The amount of items to move between inventories.
+     */
     public enum MoveType {
         /** Move full inventory. */ MOVE_ALL,
         /** Move all items of the same type. */ MOVE_ALL_TYPE,
@@ -58,10 +66,22 @@ public class Functions {
         /** Move slot to an empty slot. */ MOVE_EMPTY
     }
 
+    /**
+     * The sorting logic to use.
+     */
     private enum Mode {
-        DEFAULT, COMPACT, NONE
+        /*** Alphabetical sorting. */ DEFAULT,
+        /** Combine ItemStacks without rearranging. */ COMPACT,
+        /** Doesn't perform any logic. Returns unchanged. */ NONE
     }
 
+    /**
+     * Calculate the order items should be sorted on, based on the last time sorting happened, and if
+     * sorting changes with clicks.
+     *
+     * @param lastSortTime The last time sorting happened.
+     * @return The order to be used while sorting.
+     */
     @OnlyIn(Dist.CLIENT)
     public static boolean getChangeOrder(long lastSortTime) {
         Map config = null;
@@ -91,6 +111,12 @@ public class Functions {
         return changeOrder;
     }
 
+    /**
+     * Get the permission level of an inventory's class for sorting purposes.
+     *
+     * @param className The name of the class of the inventory.
+     * @return The permission level.
+     */
     @OnlyIn(Dist.CLIENT)
     public static Permission getPermission(String className) {
         if (Config.blacklist.contains(className)) {
@@ -145,6 +171,15 @@ public class Functions {
         return Permission.PLAYER_FIRST;
     }
 
+    /**
+     * Replace the item held by a player.
+     *
+     * @param playerEntity The player to perform the action on.
+     * @param hand Main hand, or secondary hand.
+     * @param itemStack The ItemStack to place.
+     *
+     * @return The success of the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     public static boolean replaceItem(PlayerEntity playerEntity, Hand hand, ItemStack itemStack) {
         if (playerEntity.isCreative() || Minecraft.getInstance().player == null
@@ -252,6 +287,14 @@ public class Functions {
         return true;
     }
 
+    /**
+     * Perform one craft. Used for "craft one item" shortcut.
+     *
+     * @param craftResult The item produced by the craft.
+     * @param player The player to craft items to.
+     *
+     * @return The success of the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     public static boolean craftItem(ItemStack craftResult, PlayerEntity player) {
         ArrayList<ItemStack> playerInventory = new ArrayList<>(player.inventory.mainInventory);
@@ -311,6 +354,13 @@ public class Functions {
         return false;
     }
 
+    /**
+     * Craft as many items as possible.
+     *
+     * @param craftingItemStacks The materials required for the craft.
+     * @param craftResult The item produced by the craft.
+     * @param player The player to craft items to.
+     */
     @OnlyIn(Dist.CLIENT)
     public static void craftAllInventory(List<ItemStack> craftingItemStacks, ItemStack craftResult,
                                          PlayerEntity player) {
@@ -487,6 +537,17 @@ public class Functions {
         Channel.INSTANCE.sendToServer(new OverFlowPacket(overFlow));
     }
 
+    /**
+     * Helper method to move an ItemStack between two inventories.
+     *
+     * @param oldInventory The initial inventory.
+     * @param newInventory The target inventories.
+     * @param oldIndex The index of the item.
+     * @param number The number of items to move.
+     * @param oldToNew The direction to move items in.
+     *
+     * @return The success of the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     public static boolean moveItem(ArrayList<ItemStack> oldInventory, ArrayList<ItemStack> newInventory,
                                    int oldIndex, int number, boolean oldToNew) {
@@ -608,6 +669,11 @@ public class Functions {
         }
     }
 
+    /**
+     * Helper method to get the sort key bind from the config.
+     *
+     * @return The current key bind or 82 (R).
+     */
     @OnlyIn(Dist.CLIENT)
     public static int getKeyBind() {
         int bind = 82;
@@ -625,6 +691,15 @@ public class Functions {
         return bind;
     }
 
+    /**
+     * Move items between unknown inventories.
+     * Try to move an item from a player inventory to an open-container, or the other way around.
+     * If the open container is the player inventory, moves items withing the inventory.
+     *
+     * @param slot The slot to move items from.
+     * @param count The number of items to move.
+     * @param moveType The logic to use while performing the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     public static void moveUnknownInv(Slot slot, int count, MoveType moveType) {
         ArrayList<ItemStack> ext;
@@ -806,6 +881,12 @@ public class Functions {
         }
     }
 
+    /**
+     * Checks if an ItemStack is air.
+     *
+     * @param itemStack The ItemStack to check.
+     * @return If the ItemStack is air.
+     */
     public static boolean isAir(ItemStack itemStack) {
         return itemStack.getItem().toString().equals("air");
     }
@@ -835,6 +916,15 @@ public class Functions {
         return 0;
     }
 
+    /**
+     * Helper method to move an ItemStack from one inventory, to an empty slot in another.
+     *
+     * @param slotIndex The index of the item.
+     * @param origin The origin inventories.
+     * @param destination The destination inventories.
+     *
+     * @return Whether there was a change in the inventories.
+     */
     private static boolean findEmptySlot(int slotIndex, ArrayList<ItemStack> origin, ArrayList<ItemStack> destination) {
         boolean updated = false;
         for (int i = 0; i < destination.size(); i++) {
@@ -848,6 +938,16 @@ public class Functions {
         return updated;
     }
 
+    /**
+     * Organizing inventory by given order.
+     *
+     * @param inventory The inventory to organize.
+     * @param order The order to organize the items into.
+     * @param width The width of the inventory.
+     * @param height The height of the inventory.
+     *
+     * @return The sorted inventory.
+     */
     private static ArrayList<ItemStack> orderInventory(ArrayList<ItemStack> inventory, ClientEventHandlers.Order order,
                                                        int width, int height) {
         if (inventory.isEmpty()) return inventory;
@@ -863,17 +963,33 @@ public class Functions {
         }
     }
 
+    /**
+     * Helper method to replace null items.
+     *
+     * @param array The array to replace items within.
+     * @param itemStack The ItemStack to place.
+     */
     private static void fillEmpty(ItemStack[][] array, ItemStack itemStack) {
         for (int i = 0; i < array.length; i++) {
             for (int j = 0; j <array[i].length; j++) {
                 if (array[i][j] == null) {
-                    array[i][j] = itemStack;
+                    array[i][j] = itemStack.copy();
                     return;
                 }
             }
         }
     }
 
+    /**
+     * Helper method to organize inventories into rows and columns.
+     *
+     * @param inventory The inventory to organize.
+     * @param width The width of the inventory.
+     * @param height The height of the inventory.
+     * @param vertical Whether to group into rows or columns.
+     *
+     * @return The sorted inventory.
+     */
     private static ArrayList<ItemStack> splitRows(ArrayList<ItemStack> inventory, int width, int height,
                                                   boolean vertical) {
         int longer = width;
@@ -954,12 +1070,27 @@ public class Functions {
         return sorted;
     }
 
+    /**
+     * Switch two items within an inventory.
+     *
+     * @param oldIndex The first item.
+     * @param newIndex The second item.
+     * @param list The inventory to organize.
+     */
     private static void switchItems(int oldIndex, int newIndex, ArrayList<ItemStack> list) {
         ItemStack old = list.get(oldIndex);
         list.set(oldIndex, list.get(newIndex));
         list.set(newIndex, old);
     }
 
+    /**
+     * Helper method to sort an inventory.
+     *
+     * @param inventory The inventory to sort.
+     * @param mode The mode to use while sorting.
+     *
+     * @return The sorted inventory.
+     */
     private static ArrayList<ItemStack> sortLogic(ArrayList<ItemStack> inventory, Mode mode) {
         // TODO: Allow implementation of custom logic
         Map<CompoundNBT, Integer> items = new LinkedHashMap<>();
@@ -1061,6 +1192,11 @@ public class Functions {
         return sorted;
     }
 
+    /***
+     * Helper method to get the sort order from the config.
+     *
+     * @return The sort order.
+     */
     @OnlyIn(Dist.CLIENT)
     private static Mode getSortOrder() {
         Mode sortOrder;
@@ -1083,6 +1219,16 @@ public class Functions {
         return sortOrder;
     }
 
+    /**
+     * Helper method to clean up after performing a sort.
+     * Backs up the inventory, spawns any items that could not be fit into the world,
+     * logs the event, and cleans up the backup folder.
+     *
+     * @param inventory The inventory to back up.
+     * @param maxSize The maximum items that can fit within an inventory.
+     *
+     * @return The success of the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     private static boolean sortCleanup(ArrayList<ItemStack> inventory, int maxSize) {
         // Dumping inventory items (in case of error)
@@ -1113,6 +1259,14 @@ public class Functions {
         return true;
     }
 
+    /**
+     * Exclude the first x items from a list. Used to remove hotbar items from an inventory.
+     *
+     * @param inventory The inventory to exclude the hotbar from.
+     * @param hotbarSize The size of the hotbar.
+     *
+     * @return The new inventory without the hotbar.
+     */
     private static ArrayList<ItemStack> excludeHotbar(List<ItemStack> inventory, int hotbarSize) {
         ArrayList<ItemStack> excluded = new ArrayList<>();
 
@@ -1127,12 +1281,29 @@ public class Functions {
         return excluded;
     }
 
+    /**
+     * Splits an inventory into hotbar and main inventory items.
+     *
+     * @param inventory The inventory to split.
+     * @param hotbarSize The size of the hotbar.
+     *
+     * @return The split inventory.
+     */
     private static Map.Entry<ArrayList<ItemStack>, ArrayList<ItemStack>> splitInventory(List<ItemStack> inventory,
                                                                                         int hotbarSize) {
         return new SimpleEntry<>(new ArrayList<>(inventory.subList(0, hotbarSize)),
                 new ArrayList<>(inventory.subList(hotbarSize, inventory.size())));
     }
 
+    /**
+     * Move as many items as possible from one inventory into another.
+     *
+     * @param origin The origin to empty.
+     * @param newInv The inventory to fill.
+     * @param item The item to move. Pass in null to move all items of all types.
+     *
+     * @return The success of the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     private static boolean moveAllItems(ArrayList<ItemStack> origin, ArrayList<ItemStack> newInv, Item item) {
         boolean toSend = false;
@@ -1384,6 +1555,12 @@ public class Functions {
         return sortCleanup(toSend, maxSize);
     }
 
+    /**
+     * Helper method to sort the inventory of a player.
+     *
+     * @param itemList The player's inventory.
+     * @return The success of the operation.
+     */
     @OnlyIn(Dist.CLIENT)
     public static boolean playerSort(NonNullList<ItemStack> itemList) {
         // Items to be sent to sort
@@ -1438,6 +1615,7 @@ public class Functions {
      * @param playerEntity The player to refill.
      * @param item The item which should be refilled.
      * @param hand Hand that will be refilled.
+     *
      * @return The result of the operations. 0 Represents a successful refill, 1 represents no refill without error,
      * 2 represents an error.
      */

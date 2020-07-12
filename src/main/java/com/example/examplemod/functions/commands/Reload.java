@@ -13,7 +13,16 @@ import net.minecraft.util.text.StringTextComponent;
 
 import java.util.ArrayList;
 
+/**
+ * Reload Settings Command Class.
+ */
 class Reload implements Command<CommandSource> {
+    /**
+     * Logic for reload command.
+     *
+     * @param ctx The Command Context.
+     * @return Success.
+     */
     @Override
     public int run(CommandContext<CommandSource> ctx) {
         try {

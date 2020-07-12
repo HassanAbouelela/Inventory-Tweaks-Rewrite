@@ -35,16 +35,35 @@ import java.util.Map;
 // The value here should match an entry in the META-INF/mods.toml file
 // TODO: Change mod name
 @Mod("examplemod")
-public class ExampleMod
-{
-    // Getting Event Logger
+public class ExampleMod {
+    /**
+     * Event logger.
+     */
     private static final Logger LOGGER = LogManager.getLogger();
     // TODO: Automate this ->
+    /**
+     * The ID of the mod.
+     */
     public static final String ID = "examplemod";
+    /**
+     * The name of the mod.
+     */
     public static final String NAME = "Inventory Tweaks Rewrite";
+    /**
+     * The shortened version of the mod's name.
+     */
     public static final String NAME_SHORT = "ITR";
+    /**
+     * An air ItemStack.
+     */
     public static final ItemStack AIR = new ItemStack(Item.getItemById(0));
-    public static Config CONFIG = null;
+    /**
+     * The CONFIG.
+     */
+    public static Config CONFIG;
+//    /**
+//     * Whether to run mod features on non-supported servers.
+//     */
 //    public static boolean serverAllowed = false; - Not Implemented
 
     static {
@@ -54,9 +73,13 @@ public class ExampleMod
         } catch (Exception error) {
             LOGGER.error(String.format("[%s] Config setup error: (%s) - %s", NAME,
                     error.getClass().getCanonicalName(), Arrays.toString(error.getStackTrace())));
+            CONFIG = null;
         }
     }
 
+    /**
+     * Main mod class.
+     */
     public ExampleMod( ) {
         // Register IMC processing
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
@@ -72,6 +95,11 @@ public class ExampleMod
         MinecraftForge.EVENT_BUS.register(serverEventHandlers);
     }
 
+    /**
+     * Event handler for IMC messages.
+     *
+     * @param event The IMC event.
+     */
     private void processIMC(final InterModProcessEvent event) {
         LOGGER.debug(String.format("[%s] Started IMC", NAME));
 

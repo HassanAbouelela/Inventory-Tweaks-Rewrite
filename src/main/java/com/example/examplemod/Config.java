@@ -26,20 +26,36 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Config {
+    /**
+     * Event logger.
+     */
     private static final Logger LOGGER = LogManager.getLogger();
+    /**
+     * JSON object mapper.
+     */
     private static final ObjectMapper mapper = new ObjectMapper();
+    /**
+     * The content of the options.
+     */
     private Map<String, Map> content = new HashMap<>();
+    /**
+     * Game constants.
+     */
     private Setting constants;
+    /**
+     * Whether the settings have been read successfully.
+     */
     private boolean readError = false;
 
+    /**
+     * The file of the config.
+     */
     public final File configFile = new File(FMLPaths.CONFIGDIR.get() +
             String.format("/%s.json", ExampleMod.NAME));
+    /**
+     * Blacklisted screens.
+     */
     public static final ArrayList<String> blacklist = new ArrayList<>(Arrays.asList(
-            ChatLine.class.getName(), OptionsScreen.class.getName(), OptionsSoundsScreen.class.getName(),
-            ChatOptionsScreen.class.getName(), ChatScreen.class.getName()));
-
-    // *Screens* that should be ignored
-    public static final ArrayList<String> blackListScreens = new ArrayList<>(Arrays.asList(
             AbstractCommandBlockScreen.class.getName(), AddServerScreen.class.getName(), AlertScreen.class.getName(),
             ChatOptionsScreen.class.getName(), ChatScreen.class.getName(), CommandBlockScreen.class.getName(),
             ConfirmBackupScreen.class.getName(), ConfirmOpenLinkScreen.class.getName(), ConfirmScreen.class.getName(),
@@ -59,7 +75,8 @@ public class Config {
             SettingsScreen.class.getName(), ShareToLanScreen.class.getName(), SleepInMultiplayerScreen.class.getName(),
             StatsScreen.class.getName(), VideoSettingsScreen.class.getName(), WinGameScreen.class.getName(),
             WorkingScreen.class.getName(), WorldLoadProgressScreen.class.getName(), WorldSelectionList.class.getName(),
-            WorldSelectionScreen.class.getName()
+            WorldSelectionScreen.class.getName(), ChatLine.class.getName(), OptionsScreen.class.getName(),
+            OptionsSoundsScreen.class.getName(), ChatOptionsScreen.class.getName(), ChatScreen.class.getName()
     ));
     // TODO: Add all screens above
 
@@ -89,6 +106,14 @@ public class Config {
         return false;
     }
 
+    /**
+     * Loading option file.
+     *
+     * @return The success of the operation.
+     * 0: File loaded.
+     * 1: File created.
+     * 2: Error.
+     */
     public int load() {
         try {
             if (checkFile()) {
@@ -186,6 +211,11 @@ public class Config {
 
     }
 
+    /**
+     * Returns game constants.
+     *
+     * @return Game constants.
+     */
     private Setting getConstants() {
         try {
             if (this.content.containsKey("Constants")) {
@@ -225,6 +255,9 @@ public class Config {
         return constants;
     }
 
+    /**
+     * Create options folder.
+     */
     private void create() {
         try {
             Files.createFile(configFile.toPath());
@@ -327,12 +360,23 @@ public class Config {
         }
     }
 
+    /**
+     * Update the options file with the current options.
+     *
+     * @throws FileNotFoundException Couldn't find options file.
+     * @throws JsonProcessingException Couldn't convert the options to JSON.
+     */
     private void update() throws FileNotFoundException, JsonProcessingException {
         PrintWriter printer = new PrintWriter(this.configFile);
         printer.write(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(content));
         printer.flush(); printer.close();
     }
 
+    /**
+     * Get the sort options from all the options.
+     *
+     * @return The sort options.
+     */
     @Nullable
     public Map getSortSettings() {
         if (this.content != null && this.content.containsKey("Sort Options")) {
@@ -341,6 +385,12 @@ public class Config {
         return null;
     }
 
+    /**
+     * Get a map from options.
+     *
+     * @param key The map's key.
+     * @return The map.
+     */
     @Nullable
     public Map getMap(String key) {
         if (key == null) return null;
@@ -352,6 +402,14 @@ public class Config {
         return null;
     }
 
+    /**
+     * Gets a value from a map, and casts it to a map.
+     *
+     * @param key The key to get the map.
+     * @param map The map to search.
+     *
+     * @return The map.
+     */
     @Nullable
     public static Map getMap(String key, Map map) {
         if (key == null || map == null) return null;
@@ -363,6 +421,12 @@ public class Config {
         return null;
     }
 
+    /**
+     * Get a game constant's value.
+     *
+     * @param constant The game constant.
+     * @return The constant's value.
+     */
     @Nullable
     public Object getConstant(String constant) {
         if (constant == null) return null;
@@ -374,6 +438,15 @@ public class Config {
         return null;
     }
 
+    /**
+     * Updates the game's constants.
+     *
+     * @param key The constant to update.
+     * @param value The new value.
+     *
+     * @throws FileNotFoundException Could not find the config file.
+     * @throws JsonProcessingException Could not convert to JSON.
+     */
     void updateConstants(String key, Object value) throws FileNotFoundException, JsonProcessingException {
         this.constants.addSetting(key, value);
         this.content.putAll(this.constants.get());

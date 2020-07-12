@@ -25,13 +25,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
+/**
+ * Class for Backing Up Items.
+ */
 public class Backup {
-    // Getting Event Logger
+    /**
+     * Event Logger.
+     */
     private static final Logger LOGGER = LogManager.getLogger();
+    /**
+     * JSON Object Mapper.
+     */
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * A function that deletes folder, files, and files within folders.
+     * A method that deletes folder, files, and files within folders.
      *
      * @param file The file/folder to clear.
      * @return A boolean representing the success of the operation; A false value represents success.

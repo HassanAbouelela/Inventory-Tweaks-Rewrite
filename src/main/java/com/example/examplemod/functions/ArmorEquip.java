@@ -15,7 +15,16 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for facilitating armor logic.
+ */
 class ArmorEquip {
+    /**
+     * General method to get the best combination of armor out of a list.
+     *
+     * @param inventory The ItemStacks to look through, along with their indexes.
+     * @return The original indexes of the selected armor pieces, arranged as: Helmet, Chest Piece, Leggings, and Boots.
+     */
     static int[] getBestArmor(ArrayList<Entry<ItemStack, Integer>> inventory) {
         ItemStack helmet = null;
         ItemStack chestPlate = null;
@@ -66,6 +75,14 @@ class ArmorEquip {
         return result;
     }
 
+    /**
+     * Helper method to compare two pieces of armor on a 10 point scale. Criteria listed in method.
+     *
+     * @param itemStack1 The first item to compare.
+     * @param itemStack2 The second item to compare.
+     *
+     * @return The better of the two items.
+     */
     private static ItemStack compareArmor(ItemStack itemStack1, ItemStack itemStack2) {
         /*
          * 10 Point-Scale
@@ -115,12 +132,24 @@ class ArmorEquip {
         return score2 > score1 ? itemStack2 : itemStack1;
     }
 
+    /**
+     * Helper method to calculate the durability of an armor item, along with enchantments.
+     *
+     * @param itemStack The ItemStack to calculate the durability of.
+     * @return The raw remaining durability of the item.
+     */
     private static int calculateDurability(ItemStack itemStack) {
         // Formula for un-breaking effectiveness from: https://minecraft.gamepedia.com/Unbreaking
         int unbreakingLevel = Functions.getTagLevel("minecraft:unbreaking", itemStack);
         return (2 - (60 + (40 / (unbreakingLevel + 1))) / 100) * (itemStack.getMaxDamage() - itemStack.getDamage());
     }
 
+    /**
+     * Helper method to calculate the protection provided by an armor piece, along with enchantments.
+     *
+     * @param itemStack The ItemStack to calculate the defense of.
+     * @return The raw defense value of the item.
+     */
     private static float calculateDefense(ItemStack itemStack) {
         // Protection bonus calculation from: https://minecraft.gamepedia.com/Protection
         float enchantBonus = 0;
@@ -142,12 +171,19 @@ class ArmorEquip {
         return (armorItem.getDamageReduceAmount() + armorItem.getToughness()) * (1 + enchantBonus);
     }
 
+    /**
+     * Helper method to calculate how many non-protection and non-health related enchants are on an item.
+     *
+     * @param itemStack The ItemStack to calculate the number of enchants on.
+     * @return The net number of positive and negative enchants, relative to their levels.
+     */
     private static int calculateExtraEnchants(ItemStack itemStack) {
         int score = 0;
         for (INBT nbt: itemStack.getEnchantmentTagList()) {
             if (nbt.getString().toLowerCase().contains("curse")) {
                 score--;
             } else {
+                if (nbt.getString().contains("protection") || nbt.getString().contains("unbreaking")) continue;
                 Matcher matcher = Pattern.compile("(?<=lvl:)([0-9]+)").matcher(nbt.getString());
 
                 if (matcher.find()) {

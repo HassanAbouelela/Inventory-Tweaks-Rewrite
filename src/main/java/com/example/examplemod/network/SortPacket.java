@@ -10,11 +10,25 @@ import net.minecraft.network.PacketBuffer;
 
 import java.util.ArrayList;
 
-
+/**
+ * Class to rewrite the content of an inventory.
+ */
 public class SortPacket {
+    /**
+     * The player to perform the sort on.
+     */
     private final boolean player;
+    /**
+     * The new inventory.
+     */
     private final ArrayList<ItemStack> newInventory;
+    /**
+     * The index of the first item in the inventory.
+     */
     private final int index;
+    /**
+     * The size of the inventory.
+     */
     private final int size;
 
     /**
@@ -59,22 +73,48 @@ public class SortPacket {
         this.size = size;
     }
 
+    /**
+     * Returns whether the inventory is the player's inventory, or the open container.
+     *
+     * @return Whether the inventory is the player's inventory, or the open container.
+     */
     public boolean isPlayer() {
         return player;
     }
 
+    /**
+     * Returns the new inventory.
+     *
+     * @return The new inventory.
+     */
     public ArrayList<ItemStack> getItems( ) {
         return this.newInventory;
     }
 
-    public int getIndex() {
+    /**
+     * Returns the beginning index.
+     *
+     * @return The beginning index.
+     */
+    int getIndex() {
         return this.index;
     }
 
+    /**
+     * Returns the size of the inventory.
+     *
+     * @return The size of the inventory.
+     */
     public int getSize() {
         return this.size;
     }
 
+    /**
+     * The encoder for this packet.
+     *
+     * @param message The packet.
+     * @param buffer The buffer to write to.
+     */
     static void encode(SortPacket message, PacketBuffer buffer) {
         buffer.writeInt(message.index);
         buffer.writeInt(message.size);
@@ -88,6 +128,12 @@ public class SortPacket {
         buffer.writeBoolean(message.player);
     }
 
+    /**
+     * The decoder for this packet.
+     *
+     * @param buffer The buffer to read from.
+     * @return The packet.
+     */
     static SortPacket decode(PacketBuffer buffer) {
         int index = buffer.readInt();
         int size = buffer.readInt();

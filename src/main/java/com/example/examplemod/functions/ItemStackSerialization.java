@@ -21,6 +21,9 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class to serialize ItemStacks to be backed up.
+ */
 class ItemStackSerialization {
     private final Map<String, Object> itemInfo;
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -94,8 +97,8 @@ class ItemStackSerialization {
      * A utility to convert a string form of a serialized ItemStack into an ItemStack object.
      *
      * @param backupItem A string representation of the serialized ItemStack.
-     * @return The ItemStack object represented by the string.
      *
+     * @return The ItemStack object represented by the string.
      * @throws IOException Could not load tag serialization file.
      */
     static ItemStack deserialize(String backupItem) throws IOException {

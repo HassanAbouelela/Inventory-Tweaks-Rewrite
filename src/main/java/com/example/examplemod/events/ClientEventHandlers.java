@@ -43,21 +43,46 @@ import java.util.*;
 
 import static com.example.examplemod.ExampleMod.CONFIG;
 
+/**
+ * Class for handling game events on the client side.
+ */
 public class ClientEventHandlers {
-    // Getting Event Logger
+    /**
+     * Event logger.
+     */
     private static final Logger LOGGER = LogManager.getLogger();
     // TODO: Clean up logging
 
+    /**
+     * The sorting order items should be arranged into.
+     */
     public enum Order {
-        DEFAULT, COLUMNS, ROWS
+        /** Sort into default order. */ DEFAULT,
+        /** Sort into columns. */ COLUMNS,
+        /** Sort into rows.*/ ROWS
     }
 
+    /**
+     * The method sorting got initiated through.
+     */
     private enum Source {
-        KEYBIND, MIDDLE_MOUSE, DEFAULT_BUTTON, COL_BUTTON, ROW_BUTTON, PLAYER_INVENTORY
+        /** KeyBind in GUI. */ KEYBIND,
+        /** Middle Mouse Click in GUI. */ MIDDLE_MOUSE,
+        /** Drawn GUI Button for Default Sorting Order. */ DEFAULT_BUTTON,
+        /** Drawn GUI Button for Column Sorting Order. */ COL_BUTTON,
+        /** Drawn GUI Button for Row Sorting Order. */ ROW_BUTTON,
+        /** Keybind outside GUI. */ PLAYER_INVENTORY
     }
 
+    /**
+     * The current sorting order for inventory sorting.
+     */
     private Order currentOrder = Order.DEFAULT;
+    /**
+     * The last time a sort got initiated. Used to prevent repetitive sorting when holding button.
+     */
     private long lastSort = System.currentTimeMillis();
+
     /**
      * Main sorting handler.
      *
@@ -151,7 +176,17 @@ public class ClientEventHandlers {
         }
     }
 
+    /**
+     * Used to determine if sorting triggered through the GUI or outside it.
+     */
     private boolean guiCalled = false;
+
+    /**
+     * Event handler for GUI keyboard key presses (release).
+     * Used to initiate GUI sorting using shortcuts.
+     *
+     * @param event The keyboard key release event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onGuiKey(GuiScreenEvent.KeyboardKeyReleasedEvent.Post event) {
@@ -174,9 +209,25 @@ public class ClientEventHandlers {
         }
     }
 
+    /**
+     * The last pressed key.
+     */
     private int lastKey = -1;
+    /**
+     * The last pressed modifier(s).
+     */
     private int lastMod = 0;
+    /**
+     * The last time a key or modifier got pressed.
+     */
     private long lastKeyPress = System.currentTimeMillis();
+
+    /**
+     * Event handler for all key presses.
+     * Used to initiate sorting and facilitate shortcuts.
+     *
+     * @param event The general key input event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onKey(InputEvent.KeyInputEvent event) {
@@ -217,11 +268,17 @@ public class ClientEventHandlers {
         }
     }
 
+    /**
+     * Event handler for mouse clicks.
+     * Used to activate shortcuts.
+     *
+     * @param event The general mouse click event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onMouseClick(GuiScreenEvent.MouseClickedEvent event) {
         if (event.getGui().isPauseScreen() ||
-                Config.blackListScreens.contains(event.getGui().getClass().getName())) return;
+                Config.blacklist.contains(event.getGui().getClass().getName())) return;
 
         Slot slot = null;
         try {
@@ -497,7 +554,17 @@ public class ClientEventHandlers {
         }
     }
 
+    /**
+     * The last time a scroll happened.
+     */
     private long lastScroll = System.currentTimeMillis();
+
+    /**
+     * Event handler for scrolling.
+     * Used to activate move items through scroll shortcut.
+     *
+     * @param event The general scroll event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onMouseScroll(GuiScreenEvent.MouseScrollEvent event) {
@@ -558,6 +625,12 @@ public class ClientEventHandlers {
         lastScroll = System.currentTimeMillis();
     }
 
+    /**
+     * Event handler for item pickup by players.
+     * Used to allow sorting on item pickups.
+     *
+     * @param event The general sorting event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onItemPickup(PlayerEvent.ItemPickupEvent event) {
@@ -580,8 +653,17 @@ public class ClientEventHandlers {
         LOGGER.error(String.format("[%s] Inventory Sort Error Occurred, See Above.", ExampleMod.NAME));
     }
 
+    /**
+     * The last time a held item got replaced. Used to prevent multiple events firing in a row.
+     */
     private long lastReplace = System.currentTimeMillis();
 
+    /**
+     * Event handler for left clicking on blocks.
+     * Used to replace held tools when used.
+     *
+     * @param event The left click on a block event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
@@ -594,6 +676,12 @@ public class ClientEventHandlers {
         }
     }
 
+    /**
+     * Event handler for attacking entities.
+     * Used to replace weapons before they break;
+     *
+     * @param event The entity attack event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onAttack(AttackEntityEvent event) {
@@ -608,6 +696,12 @@ public class ClientEventHandlers {
         }
     }
 
+    /**
+     * Event handler for right clicking with an item.
+     * Used to replace items before they break.
+     *
+     * @param event The right click with an item event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
@@ -617,6 +711,12 @@ public class ClientEventHandlers {
         lastReplace = System.currentTimeMillis();
     }
 
+    /**
+     * Event handler for hoe use.
+     * Used to replace a hoe before it breaks.
+     *
+     * @param event The general hoe use event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onHoeUse(UseHoeEvent event) {
@@ -626,6 +726,12 @@ public class ClientEventHandlers {
         lastReplace = System.currentTimeMillis();
     }
 
+    /**
+     * Event handler for bonemeal use.
+     * Used to replace bonemeal items when they run out.
+     *
+     * @param event The general bonemeal use event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onBonemeal(BonemealEvent event) {
@@ -641,6 +747,12 @@ public class ClientEventHandlers {
         lastReplace = System.currentTimeMillis();
     }
 
+    /**
+     * Event handler for tossing items.
+     * Used to replace held items when they run out if possible.
+     *
+     * @param event The general item toss event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onItemToss(ItemTossEvent event) {
@@ -653,8 +765,17 @@ public class ClientEventHandlers {
         lastReplace = System.currentTimeMillis();
     }
 
+    /**
+     * The last hand used. Used to determine which hand last clicked on a block.
+     */
     private Hand lastUsedHand = null;
 
+    /**
+     * Event handler for right clicking on blocks.
+     * Used to record the used hand.
+     *
+     * @param event The right click on block event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
@@ -663,6 +784,12 @@ public class ClientEventHandlers {
         lastUsedHand = event.getHand();
     }
 
+    /**
+     * Event handler for placing blocks.
+     * Used to replace held items when they run out while placing blocks if possible.
+     *
+     * @param event The general block place event.
+     */
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onBlockPlace(BlockEvent.EntityPlaceEvent event) {

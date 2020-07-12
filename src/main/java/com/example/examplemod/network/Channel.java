@@ -6,7 +6,6 @@
 package com.example.examplemod.network;
 
 import com.example.examplemod.ExampleMod;
-import com.example.examplemod.events.ServerEventHandlers;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
@@ -49,21 +48,21 @@ public class Channel {
     public void register() {
         // Player -> Server
         INSTANCE.registerMessage(id++, OverFlowPacket.class,
-                OverFlowPacket::encode, OverFlowPacket::decode, ServerEventHandlers::handleOverflow);
+                OverFlowPacket::encode, OverFlowPacket::decode, ServerHandler::handleOverflow);
         INSTANCE.registerMessage(id++, SortPacket.class,
-                SortPacket::encode, SortPacket::decode, ServerEventHandlers::handleSort);
+                SortPacket::encode, SortPacket::decode, ServerHandler::handleSort);
         INSTANCE.registerMessage(id++, RefillPacket.class,
-                RefillPacket::encode, RefillPacket::decode, ServerEventHandlers::handleRefill);
+                RefillPacket::encode, RefillPacket::decode, ServerHandler::handleRefill);
         INSTANCE.registerMessage(id++, ItemReplacePacket.class,
-                ItemReplacePacket::encode, ItemReplacePacket::decode, ServerEventHandlers::handleReplace);
+                ItemReplacePacket::encode, ItemReplacePacket::decode, ServerHandler::handleReplace);
         INSTANCE.registerMessage(id++, OptimizationPacket.class,
-                OptimizationPacket::encode, OptimizationPacket::decode, ServerEventHandlers::handleOptimization);
+                OptimizationPacket::encode, OptimizationPacket::decode, ServerHandler::handleOptimization);
         INSTANCE.registerMessage(id++, DropPacket.class,
-                DropPacket::encode, DropPacket::decode, ServerEventHandlers::handleDrop);
+                DropPacket::encode, DropPacket::decode, ServerHandler::handleDrop);
         INSTANCE.registerMessage(id++, MessagePacket.class,
-                MessagePacket::encode, MessagePacket::decode, ServerEventHandlers::handleMessage);
+                MessagePacket::encode, MessagePacket::decode, ServerHandler::handleMessage);
         INSTANCE.registerMessage(id++, EquipArmorPacket.class,
-                EquipArmorPacket::encode, EquipArmorPacket::decode, ServerEventHandlers::handleEquip);
+                EquipArmorPacket::encode, EquipArmorPacket::decode, ServerHandler::handleEquip);
 
         // Server -> Player
         INSTANCE.registerMessage(id++, EmptyPackets.class,

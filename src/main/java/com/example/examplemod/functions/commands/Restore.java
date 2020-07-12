@@ -14,8 +14,16 @@ import net.minecraft.util.text.StringTextComponent;
 import java.util.ArrayList;
 import java.util.Collections;
 
-
+/**
+ * Restore Backup Command Class.
+ */
 class Restore implements Command<CommandSource> {
+    /**
+     * Logic for restore command.
+     *
+     * @param ctx The Command Context.
+     * @return Success.
+     */
     @Override
     public int run(CommandContext<CommandSource> ctx) {
         String input = ctx.getInput().toLowerCase().replaceFirst("/itr restore", "").trim();
