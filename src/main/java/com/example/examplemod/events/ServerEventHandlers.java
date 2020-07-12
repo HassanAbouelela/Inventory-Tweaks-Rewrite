@@ -246,6 +246,7 @@ public class ServerEventHandlers {
 
     public static void handleMessage(MessagePacket message, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
+            LOGGER.debug(String.format("[%s] Received message packet.", ExampleMod.NAME));
             StringTextComponent stringComponent = new StringTextComponent(message.getMessage());
             if (message.isError()) {
                 stringComponent.applyTextStyle(TextFormatting.RED);
@@ -258,6 +259,23 @@ public class ServerEventHandlers {
             } else {
                 LOGGER.warn(String.format("[%s] Failed to deliver server message to player.", ExampleMod.NAME));
             }
+        });
+        ctx.get().setPacketHandled(true);
+    }
+
+    public static void handleEquip(EquipArmorPacket message, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            LOGGER.debug(String.format("[%s] Received item equip packet.", ExampleMod.NAME));
+
+            ServerPlayerEntity sender = ctx.get().getSender();
+            if (sender == null) {
+                LOGGER.warn(String.format("[%s] Attempted server item equip on a null player, returning.",
+                        ExampleMod.NAME));
+                return;
+            }
+
+            sender.setItemStackToSlot(message.getSlotType(), message.getItemStack());
+            sender.sendContainerToPlayer(sender.container);
         });
         ctx.get().setPacketHandled(true);
     }

@@ -308,6 +308,7 @@ public class Config {
         sortSettings.addSetting(sortMethod.name, sortMethod.getSettings());
         sortSettings.addSetting("Sort On Pickup", false);
         sortSettings.addSetting("Sort Outside Inventory", false);
+        sortSettings.addSetting("Equip Best Armor on Sort", false);
 
         Map<String, Map> config = new HashMap<>(getConstants().get());
 

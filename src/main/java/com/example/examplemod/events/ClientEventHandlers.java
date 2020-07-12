@@ -239,69 +239,75 @@ public class ClientEventHandlers {
                 if (event.getButton() == 0 && lastMod != 1 && slot.inventory instanceof CraftResultInventory) {
                     // Left click in a crafting inventory
                     ClientPlayerEntity player = Minecraft.getInstance().player;
-                    if (player != null) {
-                        List<Slot> slots;
-                        ItemStack craftStack;
+                    try {
+                        if (player != null) {
+                            List<Slot> slots;
+                            ItemStack craftStack;
 
-                        if (player.openContainer instanceof PlayerContainer) {
-                            // Player crafting inventory
-                            craftStack = player.openContainer.inventorySlots.get(0).getStack();
-                            slots = player.openContainer.inventorySlots.subList(1, 5);
-                        } else {
-                            // External crafting inventory
-                            WorkbenchContainer workbench = (WorkbenchContainer) player.openContainer;
-                            craftStack = workbench.inventorySlots.get(0).getStack();
-                            slots = workbench.inventorySlots.subList(1, workbench.getSize());
-                        }
-
-                        boolean canCraft = !Functions.isAir(craftStack);
-                        ItemStack craftResult = craftStack.copy();
-
-                        if (canCraft && !slots.isEmpty()) {
-                            ArrayList<ItemStack> updatedCraftingInv = new ArrayList<>();
-                            int crafted = 0;
-
-                            switch (lastMod) {
-                                case 2:
-                                    // Control. Craft one item.
-                                    if (config.containsKey("Craft one item - Ctrl + Click") &&
-                                            !(boolean) config.get("Craft one item - Ctrl + Click")) return;
-
-                                    for (Slot craftingSlot: slots) {
-                                        ItemStack newItem = craftingSlot.getStack().copy();
-                                        newItem.setCount(craftingSlot.getStack().getCount() - 1);
-
-                                        updatedCraftingInv.add(newItem);
-                                    }
-                                    crafted++;
-
-                                    craftResult.setCount(craftResult.getCount() * crafted);
-
-                                    if (crafted > 0 && Functions.craftItem(craftResult, player)) {
-                                        Channel.INSTANCE.sendToServer(new OptimizationPacket(updatedCraftingInv));
-                                    }
-
-                                    break;
-                                case 3:
-                                    // Control + Shift. Craft all items from inventory.
-                                    if (config.containsKey("Craft all from inventory - Ctrl + Shift + Click") &&
-                                            !(boolean) config.get("Craft all from inventory - Ctrl + Shift + Click")) {
-                                        return;
-                                    }
-
-                                    ArrayList<ItemStack> neededItems = new ArrayList<>();
-                                    for (Slot craftingSlot: slots) {
-                                        neededItems.add(craftingSlot.getStack());
-                                    }
-
-                                    Functions.craftAllInventory(neededItems, craftResult, player);
+                            if (player.openContainer instanceof PlayerContainer) {
+                                // Player crafting inventory
+                                craftStack = player.openContainer.inventorySlots.get(0).getStack();
+                                slots = player.openContainer.inventorySlots.subList(1, 5);
+                            } else {
+                                // External crafting inventory
+                                WorkbenchContainer workbench = (WorkbenchContainer) player.openContainer;
+                                craftStack = workbench.inventorySlots.get(0).getStack();
+                                slots = workbench.inventorySlots.subList(1, workbench.getSize());
                             }
 
-                            event.setCanceled(true);
-                        }
-                    }
+                            boolean canCraft = !Functions.isAir(craftStack);
+                            ItemStack craftResult = craftStack.copy();
 
-                } else if (event.getButton() == 0) {
+                            if (canCraft && !slots.isEmpty()) {
+                                ArrayList<ItemStack> updatedCraftingInv = new ArrayList<>();
+                                int crafted = 0;
+
+                                switch (lastMod) {
+                                    case 2:
+                                        // Control. Craft one item.
+                                        if (config.containsKey("Craft one item - Ctrl + Click") &&
+                                                !(boolean) config.get("Craft one item - Ctrl + Click")) return;
+
+                                        for (Slot craftingSlot : slots) {
+                                            ItemStack newItem = craftingSlot.getStack().copy();
+                                            newItem.setCount(craftingSlot.getStack().getCount() - 1);
+
+                                            updatedCraftingInv.add(newItem);
+                                        }
+                                        crafted++;
+
+                                        craftResult.setCount(craftResult.getCount() * crafted);
+
+                                        if (crafted > 0 && Functions.craftItem(craftResult, player)) {
+                                            Channel.INSTANCE.sendToServer(new OptimizationPacket(updatedCraftingInv));
+                                        }
+
+                                        break;
+                                    case 3:
+                                        // Control + Shift. Craft all items from inventory.
+                                        if (config.containsKey("Craft all from inventory - Ctrl + Shift + Click") &&
+                                                !(boolean) config.get("Craft all from inventory - Ctrl + Shift + Click")) {
+                                            return;
+                                        }
+
+                                        ArrayList<ItemStack> neededItems = new ArrayList<>();
+                                        for (Slot craftingSlot : slots) {
+                                            neededItems.add(craftingSlot.getStack());
+                                        }
+
+                                        Functions.craftAllInventory(neededItems, craftResult, player);
+                                }
+
+                                event.setCanceled(true);
+                            }
+                        }
+                    } catch (ClassCastException ignored) {
+                        LOGGER.warn(String.format("[%s] Couldn't convert class: %s",
+                                ExampleMod.NAME, player.openContainer.getClass().getCanonicalName()));
+                    }
+                }
+
+                if (event.getButton() == 0) {
                     // Left Click
                     switch (lastMod) {
                         case 2:
