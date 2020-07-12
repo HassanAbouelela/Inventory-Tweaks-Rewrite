@@ -1,0 +1,99 @@
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+
+name: Gradle Build
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  Ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Cache Gradle Dependencies
+      id: gradle-cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+
+    - name: Create JavaDoc
+      run: ./gradlew javadoc
+    - name: Build
+      run: ./gradlew build
+      
+    - name: Upload JavaDoc
+      uses: actions/upload-artifact@v1
+      with:
+        name: JavaDoc
+        path: build/docs/javadoc
+    
+    - name: Upload Build
+      uses: actions/upload-artifact@v1
+      with:
+        name: Build
+        path: build/libs
+  
+  Windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Cache Gradle Dependencies
+      id: gradle-cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+
+    - name: Create JavaDoc
+      run: ./gradlew javadoc
+    - name: Build
+      run: ./gradlew build
+
+  MacOS:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Cache Gradle Dependencies
+      id: gradle-cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+
+    - name: Create JavaDoc
+      run: ./gradlew javadoc
+    - name: Build
+      run: ./gradlew build
